@@ -1,0 +1,17 @@
+{#
+    Fallback for every error that has no `error<status>.html.twig` of its own (403, 405, 500, …).
+    Same reasoning as error404.html.twig: the page keeps the site chrome instead of falling back to
+    Symfony's bare built-in page.
+#}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'error.generic.title'|trans }}{% endblock %}
+
+{% block body %}
+    <main>
+        <h1>{{ 'error.generic.title'|trans }}</h1>
+        <p>{{ 'error.generic.text'|trans }}</p>
+        <p>{{ 'emergency.notice'|trans }}</p>
+        <p><a href="{{ path('app_home') }}">{{ 'error.back_home'|trans }}</a></p>
+    </main>
+{% endblock %}
