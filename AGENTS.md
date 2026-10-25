@@ -165,6 +165,11 @@ run everything through the `php` service:
   443 and `compose.yaml` publishes it as `8000:443`, so inside the compose network the site is `https://nginx`.
 - `make shell CMD="php bin/console …"` runs one command in the `php` container; bare `make shell` opens a shell in it
   (the image is Alpine, so `sh`, not bash). `bin/*` is not executable on the bind mount — always prefix with `php`.
+- The e2e stack is these same files as a *second* compose project (`bloodbark-e2e`): `compose.e2e.yaml` sets
+  `APP_ENV=test` (PHP-FPM runs with `clear_env = no`, so the container env reaches the app) and stops nginx from
+  publishing 8000. It has its own network and its own `database_data` volume, `make down` does not touch it, and
+  `make ee-up` / `make ee` / `make ee-down` are how you start, use and stop it. Raw form:
+  `docker compose -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml …`.
 - The image carries headless Chromium and chromedriver for the acceptance suite, plus `ext-zip` (Codeception's
   WebDriver client needs it). Chromium refuses to start without a writable `HOME`, so the `php` service sets
   `HOME=/tmp`; that is the only reason the variable is there.
@@ -175,8 +180,9 @@ run everything through the `php` service:
   not in `compose.yaml`. From the host: `docker compose exec database psql -U bloodbark bloodbark`.
 - `DATABASE_URL` in `.env` points at `database:5432` with user, password and database all `bloodbark` — dev-only
   credentials, hence committed. The container creates `bloodbark`; `make db-create` adds `bloodbark_test` (the
-  `_test` suffix comes from Doctrine's `dbname_suffix` under `when@test`). Server version is pinned to 18 in
-  `config/packages/doctrine.yaml`.
+  `_test` suffix comes from Doctrine's `dbname_suffix` under `when@test`), which is what `make unit` uses. This
+  stack's `bloodbark_test` belongs to PHPUnit; the e2e suites have their own in the e2e stack. Server version is
+  pinned to 18 in `config/packages/doctrine.yaml`.
 - Logs: `docker compose logs -f php nginx`.
 - Xdebug listens for the IDE on port 9002; `PHP_IDE_CONFIG=serverName=bloodbark`, project root mounted at
   `/home/docker/src`.
@@ -214,29 +220,46 @@ Tests run against PostgreSQL too: the `test` environment renames the database to
 ### End-to-end: Codeception suites
 
 `make ee` is the end-to-end gate. Codeception (PHP-native — root `codeception.yml`, suites in
-`tests/<Suite>.suite.yml`) runs two suites against the **running** site, in this container:
+`tests/<Suite>.suite.yml`) runs two suites against the **e2e stack** — the same files as a second compose
+project in the `test` environment — through nginx, PHP-FPM and a database of its own:
 
 - `Smoke` (`tests/Smoke`, `PhpBrowser`): plain HTTP through nginx → PHP-FPM → database, no browser. This is
   where "is it up, does it answer 200" belongs. `tests/Smoke/HomepageCest.php` is the homepage 200 check.
-- `Acceptance` (`tests/Acceptance`, `WebDriver`): headless Chromium in the `php` container, for real page
+- `Acceptance` (`tests/Acceptance`, `WebDriver`): headless Chromium in the e2e `php` container, for real page
   interaction — clicks, forms, what a visitor sees. Codeception's `RunProcess` extension starts and stops
   chromedriver around the suite.
 
-`ee` depends on `up` and clears the dev cache before running, so one command covers a cold checkout and never
-tests a stale container cache. `PhpBrowser` and `WebDriver` cannot share a suite (the WebDriver module
-conflicts with any other `Web` module), which is why there are two. Both are HTTP end-to-end: they go through
-nginx, not an in-process kernel.
+`PhpBrowser` and `WebDriver` cannot share a suite (the WebDriver module conflicts with any other `Web`
+module), which is why there are two; both are HTTP end-to-end, neither uses an in-process kernel.
+
+Database lifecycle — the reason `ee` is a single command:
+
+- The e2e stack has its own postgres (`bloodbark-e2e` project → its own `database_data` volume), so a run can
+  never read or write dev data, and `make down` (dev) does not affect it. `make ee-up` starts it and brings the
+  database to a known state; `make ee` is `ee-up` plus `codecept run`; `make ee-down` stops it.
+- `ee-up` rebuilds the database on every invocation: `doctrine:database:drop --force --if-exists`, `create`,
+  `migrations:migrate --allow-no-migration` (the flag keeps an empty `migrations/` from failing the run), then
+  `doctrine:fixtures:load --append`. In the test environment Doctrine appends `_test`, so the database actually
+  used is `bloodbark_test` **inside the e2e server**. `--append` is right because the schema was just created:
+  there is nothing to purge, and purge-with-truncate would trip over foreign keys later.
+- Fixtures live in `src/DataFixtures` (`AppFixtures` is the recipe's class, still empty) and are picked up
+  because `DoctrineFixturesBundle` is registered for `dev` and `test`. They are the one place e2e data comes
+  from — add entities to `AppFixtures`, not to the tests, so a suite can write freely and every run still starts
+  from the same state.
+- `ee-up` also runs `cache:clear` (test environment) because `var/cache/test` is shared with `make unit` and a
+  container compiled before an edit would otherwise survive into the run.
+- The container env is what makes the site `test`: `compose.e2e.yaml` sets `APP_ENV=test` on `php`, and
+  PHP-FPM's `clear_env = no` passes it to the app, so web and CLI always agree on the environment.
 
 - The base URL is `E2E_BASE_URL` from `compose.yaml` (`https://nginx`, what nginx answers inside the compose
-  network). Override it in the environment before `make up` to point the suites elsewhere.
-- Run one suite with `make shell CMD="php vendor/bin/codecept run Smoke"`; add `--debug` there for step-by-step
-  requests, headers and status codes.
+  network). Override it in the environment before `make ee` to point the suites elsewhere.
+- Run one suite with `make ee`'s stack directly:
+  `docker compose -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml exec -T php php vendor/bin/codecept run Smoke`;
+  add `--debug` for step-by-step requests, headers and status codes.
 - Actor classes (`tests/Support/SmokeTester.php`, `AcceptanceTester.php`, and `_generated/` actions) come from
   `codecept build`; `codecept run` regenerates them. `_generated/` is git-ignored, and both generated actor
   files and `_generated` are excluded from php-cs-fixer and PHPStan — do not hand-format them.
 - Failures leave a screenshot (browser suite only) plus the response HTML in `var/codeception/`.
-- The site these run against is the **dev** container, so its cache and its database are the dev ones. Keep
-  suites read-only until there is a fixture story; don't write to the dev database from a test.
 - Keep using PHPUnit (`make unit`) for controller/service level work: Codeception is the outermost gate, not a
   replacement for functional tests.
 

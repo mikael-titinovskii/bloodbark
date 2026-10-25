@@ -25,6 +25,7 @@
         "codeception/module-asserts": "^3.3",
         "codeception/module-phpbrowser": "^4.1",
         "codeception/module-webdriver": "^4.0",
+        "doctrine/doctrine-fixtures-bundle": "^4.3",
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.3",

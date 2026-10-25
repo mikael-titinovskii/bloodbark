@@ -1,0 +1,25 @@
+# Overlay for `make ee`. The same stack, but as its own compose project in the `test` environment:
+# separate network, separate Postgres volume, separate cache. End-to-end runs therefore never read or
+# write dev data, and `make down` cannot take the test stack with it.
+#
+#   docker compose -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml up -d --wait
+#
+# APP_ENV reaches PHP-FPM through the container environment (the image sets `clear_env = no`), so the
+# site nginx serves is the test kernel, the same one CLI commands use.
+services:
+  php:
+    # Share the dev stack's image instead of building a second copy under the e2e project name.
+    image: bloodbark-php
+    environment:
+      APP_ENV: test
+      APP_DEBUG: 1
+      XDEBUG_MODE: 'off'
+
+  nginx:
+    restart: 'no'
+    # The e2e suite talks to https://nginx from inside the network; publishing 8000 would collide
+    # with the dev site.
+    ports: !reset []
+
+  database:
+    restart: 'no'
