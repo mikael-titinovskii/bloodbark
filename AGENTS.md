@@ -267,10 +267,15 @@ fixed filenames to `public/assets/`, and a Twig template links the file by name.
 - Destructive commands name their target and show it first: `pwd`, then
   `ls -d <path>`, then the command with an absolute path. No relative-path
   navigation into a delete.
-- History has one copy outside this directory: `.git/hooks/post-commit` mirrors
-  every commit to `/home/mimit/backups/bloodbark.git`. Check it with
-  `git --git-dir=/home/mimit/backups/bloodbark.git log --oneline`. Do not delete,
-  rewrite or "clean up" that mirror.
+- **No git hooks in this repository.** Nothing runs on commit: formatting, linting,
+  tests and any deploy step are commands someone runs on purpose (`make lint`,
+  `make unit`), never a hook that hides in `.git/`. Do not add one.
+- History has a second copy at `/home/mimit/backups/bloodbark.git`. Nothing keeps it
+  current by itself — refresh it when you want a fresh copy, from WSL because Windows
+  Git rewrites the path:
+  `wsl -d Ubuntu -e bash -lc 'git --git-dir=/home/mimit/backups/bloodbark.git remote update --prune'`.
+  Check it with `git --git-dir=… log --oneline`. Do not delete, rewrite or "clean up"
+  that mirror.
 - Git runs on both sides of the `\\wsl.localhost` share, so `core.filemode=false`
   (Windows cannot set exec bits; they are meaningless on the bind mount) and
   `.gitattributes` pins `eol=lf` (Windows' global `core.autocrlf=true` would
