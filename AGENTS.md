@@ -82,8 +82,21 @@ in `public/assets/`, templates link by name.
 - Entries are declared by hand in `vite.config.mjs`, keyed by output path: `app` → `/assets/app.js`, `'pages/home'` →
   `/assets/pages/home.js`. To add one, drop a file under `assets/`, add it to `input`, reference it from a template.
   `templates/home/index.html.twig` is the pattern — it calls `{{ parent() }}` first so the shared `app.js` stays.
-- A stylesheet imported from an entry (`import '../styles/x.css'`) is emitted beside it as `<name>.css`; nothing uses
-  that yet.
+- Tailwind CSS v4 is wired in through `@tailwindcss/vite` (a plugin in `vite.config.mjs`), not a PostCSS config. The
+  stylesheet is `assets/styles/app.css`, imported by the shared `assets/app.js` entry and built to `/assets/app.css`,
+  which `templates/base.html.twig` links from its `stylesheets` block — Vite emits CSS as a separate asset, it is not
+  injected by the module at runtime, so a new entry that imports CSS needs its own `<link>`.
+- That stylesheet uses `@import 'tailwindcss' source(none)` and declares exactly what is scanned: `templates/`, `src/`,
+  `assets/**/*.js`. Automatic detection is off on purpose (the build runs against a bind mount in a container, so the
+  project root it would infer is not worth relying on). A class that lives somewhere else — a new top-level directory,
+  a package's Twig templates — needs an `@source` line or Tailwind will not emit it. Utilities are compiled only for
+  classes that appear literally in those files; there is no safelist.
+- `make assets-watch` is the Twig loop: the plugin registers every file it scanned as a watch file, so editing a
+  template, PHP file or JS module rebuilds `app.css` in well under a second (verified through the bind mount — no
+  polling config needed). Two limits: a *new* file never triggers a build, since nothing registers it, and candidates
+  only accumulate within one watcher session, so a removed class lingers until it restarts. After adding a template,
+  creating a directory under `@source`, or deleting one, restart the watcher — or just run `make assets`, which scans
+  from scratch.
 - Filenames carry no content hash on purpose, so templates can name them and no manifest lookup is needed. Nothing sets
   long cache headers for `/assets/`, so browsers revalidate rather than serve a stale bundle — keep it that way unless
   hashing is introduced. `public/assets/` is build output only; Vite empties it on each build.

@@ -16,7 +16,13 @@
         <link rel="alternate" hreflang="{{ locale }}" href="{{ url(route, route_params|merge({_locale: locale})) }}">
         {%- endfor %}
         {%- endif %}
-        {% block stylesheets %}{% endblock %}
+        {% block stylesheets %}
+        {#
+            Tailwind's output, built from assets/styles/app.css by `make assets`. Same idea as the
+            script below: a stable filename the template can name, no manifest lookup.
+        #}
+        <link rel="stylesheet" href="/assets/app.css">
+        {% endblock %}
         {#
             Built by Vite into public/assets under stable names (`make assets`), so the file is
             named here and no manifest lookup is involved. A page with its own bundle overrides

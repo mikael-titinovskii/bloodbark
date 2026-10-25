@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 // Plain Vite, nothing Symfony-aware. Entries under assets/ are bundled to fixed paths under
@@ -7,6 +8,9 @@ import { defineConfig } from 'vite';
 const root = import.meta.dirname;
 
 export default defineConfig({
+    // Tailwind v4 as a Vite plugin: it compiles assets/styles/app.css, scans the sources the
+    // stylesheet declares with @source, and hands the result to Vite like any other CSS.
+    plugins: [tailwindcss()],
     // Vite's default publicDir is <root>/public, which here is the web root holding Symfony's
     // front controller; left on, the build would copy index.php into the output.
     publicDir: false,

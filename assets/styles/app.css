@@ -1,0 +1,14 @@
+/*
+ * Tailwind CSS, imported by assets/app.js and therefore built to public/assets/app.css.
+ * base.html.twig links that file in its `stylesheets` block — Vite emits CSS as a separate
+ * asset, it is not injected by the module at runtime.
+ *
+ * `source(none)` turns off Tailwind's automatic content detection so the scanned files are the
+ * ones listed below and nothing else: the classes live in Twig templates, with PHP and JS only
+ * contributing the occasional one written out in a string.
+ */
+@import 'tailwindcss' source(none);
+
+@source '../../templates';
+@source '../../src';
+@source '../**/*.js';

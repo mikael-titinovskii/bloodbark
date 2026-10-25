@@ -59,7 +59,9 @@ unit:
 assets:
 	$(NODE) npm run build
 
-# Same build, rebuilding on every change under assets/. Leave it running in its own terminal.
+# Same build, rebuilding whenever a file under assets/ or a Tailwind `@source` changes — templates
+# included, so a new utility class in Twig lands in app.css within a second. Restart it after
+# adding or deleting a source file: new files do not trigger a build. Leave it in its own terminal.
 assets-watch:
 	$(NODE) npm run watch
 
