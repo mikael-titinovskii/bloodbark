@@ -18,6 +18,13 @@ parameters:
     app.mailer.sender_name: 'Bloodbark'
     app.mailer.sender: '%env(default:app.mailer.sender_address:MAILER_SENDER)%'
 
+    # The address that becomes ROLE_SUPER_ADMIN the moment it registers, so the first admin needs no
+    # console step. Set SUPERADMIN_EMAIL in `.env.local` or the deployment environment — it is an
+    # identity, not a secret, but it is somebody's address, so it does not belong in the repository.
+    # Unset means "nobody is promoted automatically"; `app:user:promote` works either way. The
+    # `string:` processor is what turns the missing value into '' rather than null.
+    app.security.super_admin_email: '%env(string:default::SUPERADMIN_EMAIL)%'
+
 services:
     # default configuration for services in *this* file
     _defaults:

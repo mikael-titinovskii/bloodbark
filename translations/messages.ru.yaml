@@ -96,6 +96,28 @@ reset.email.expiry: Ссылка действует %hours% ч.
 reset.email.security: >-
     Если вы не запрашивали сброс, проигнорируйте письмо. Пароль останется прежним.
 
+# Shared by the registration mail and the resend mail: the paragraph that carries the link.
+email.confirm.intro: >-
+    Подтвердите адрес по ссылке ниже. Только после этого адрес считается вашим.
+
+confirmation.email.subject: Подтвердите адрес Bloodbark
+confirmation.email.ignore: Если вы не запрашивали эту ссылку, проигнорируйте письмо.
+
+confirmation.confirmed.title: Адрес подтверждён
+confirmation.confirmed.text: Спасибо. Адрес %email% подтверждён.
+confirmation.invalid.title: Ссылка больше не действует
+confirmation.invalid.text: >-
+    Ссылка уже использована или не существует. Если адрес ещё не подтверждён, войдите и запросите
+    новую ссылку в своём аккаунте.
+
+confirmation.account.label: Адрес подтверждён
+confirmation.account.yes: Да
+confirmation.account.no: Пока нет
+confirmation.resend: Отправить ссылку снова
+confirmation.resend.help: >-
+    Подтверждение не мешает входу, но отмечает адрес как ваш.
+confirmation.resent: Мы отправили новую ссылку для подтверждения.
+
 login.title: Вход
 login.email: Адрес электронной почты
 login.password: Пароль

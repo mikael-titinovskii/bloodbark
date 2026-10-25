@@ -33,4 +33,9 @@ final class UserRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
+
+    public function findByConfirmationToken(string $tokenHash): ?User
+    {
+        return $this->findOneBy(['confirmationTokenHash' => $tokenHash]);
+    }
 }

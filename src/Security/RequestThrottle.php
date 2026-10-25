@@ -20,6 +20,7 @@ final readonly class RequestThrottle
     public function __construct(
         #[Autowire(service: 'limiter.registration')] private RateLimiterFactory $registration,
         #[Autowire(service: 'limiter.password_reset')] private RateLimiterFactory $passwordReset,
+        #[Autowire(service: 'limiter.email_confirmation')] private RateLimiterFactory $emailConfirmation,
     ) {
     }
 
@@ -31,6 +32,11 @@ final readonly class RequestThrottle
     public function passwordReset(Request $request): void
     {
         $this->consume($this->passwordReset, $request);
+    }
+
+    public function confirmation(Request $request): void
+    {
+        $this->consume($this->emailConfirmation, $request);
     }
 
     private function consume(RateLimiterFactory $factory, Request $request): void

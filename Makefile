@@ -81,6 +81,9 @@ ee-up:
 	$(EE_PHP) php bin/console doctrine:database:create
 	$(EE_PHP) php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 	$(EE_PHP) php bin/console cache:clear
+	# `cache:clear` rebuilds the container but leaves the cache pools alone, and the rate-limiter
+	# counters live in one of them: without this, runs accumulate hits until a suite is answered 429.
+	$(EE_PHP) php bin/console cache:pool:clear cache.rate_limiter
 	$(EE_PHP) php bin/console doctrine:fixtures:load --no-interaction --append
 
 ee-down:

@@ -1,0 +1,22 @@
+{#
+    Sent by App\Mailer\ConfirmationMailer when an account asks for a new confirmation link. The
+    token in `confirmationUrl` is the only copy: the account stores its hash.
+#}
+<!doctype html>
+<html lang="{{ locale }}">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ 'confirmation.email.subject'|trans }}</title>
+    </head>
+    <body>
+        <p>{{ 'email.greeting'|trans }}</p>
+
+        <p>{{ 'email.confirm.intro'|trans }}</p>
+
+        <p><a href="{{ confirmationUrl }}">{{ confirmationUrl }}</a></p>
+
+        <p>{{ 'confirmation.email.ignore'|trans }}</p>
+
+        <p>{{ 'email.signature'|trans }}</p>
+    </body>
+</html>

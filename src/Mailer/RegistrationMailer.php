@@ -11,8 +11,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Delivers the generated password. This message is the only place the plaintext password ever
- * exists: the account stores the hash, nothing logs the plain value.
+ * Delivers the generated password and the address-confirmation link in one message. This is the
+ * only place the plaintext password and the plain token ever exist together: the database keeps
+ * their hashes, nothing logs either value.
  */
 final readonly class RegistrationMailer
 {
@@ -25,7 +26,7 @@ final readonly class RegistrationMailer
     ) {
     }
 
-    public function send(User $user, string $plainPassword, string $locale): void
+    public function send(User $user, string $plainPassword, string $confirmationToken, string $locale): void
     {
         $email = (new TemplatedEmail())
             ->from(new Address($this->senderAddress, $this->senderName))
@@ -41,6 +42,7 @@ final readonly class RegistrationMailer
                 'password' => $plainPassword,
                 'locale' => $locale,
                 'loginUrl' => $this->urls->generate('app_login', ['_locale' => $locale], UrlGeneratorInterface::ABSOLUTE_URL),
+                'confirmationUrl' => $this->urls->generate('app_confirm_email', ['token' => $confirmationToken, '_locale' => $locale], UrlGeneratorInterface::ABSOLUTE_URL),
             ]);
 
         $this->mailer->send($email);

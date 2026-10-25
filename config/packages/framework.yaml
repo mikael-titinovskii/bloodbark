@@ -17,6 +17,10 @@ framework:
             policy: 'sliding_window'
             limit: 5
             interval: '1 hour'
+        email_confirmation:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '1 hour'
 
     #esi: true
     #fragments: true

@@ -15,6 +15,8 @@
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
+        <!-- The address that becomes super admin once it confirms itself; see EmailConfirmationTest. -->
+        <server name="SUPERADMIN_EMAIL" value="superadmin@example.test" />
     </php>
 
     <testsuites>

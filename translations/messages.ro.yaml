@@ -95,6 +95,28 @@ reset.email.expiry: Linkul expiră în %hours% ore.
 reset.email.security: >-
     Dacă nu ai cerut resetarea, ignoră mesajul. Parola rămâne neschimbată.
 
+# Shared by the registration mail and the resend mail: the paragraph that carries the link.
+email.confirm.intro: >-
+    Confirmă adresa apelând linkul de mai jos. Doar așa adresa este considerată a ta.
+
+confirmation.email.subject: Confirmă-ți adresa Bloodbark
+confirmation.email.ignore: Dacă nu ai cerut acest link, ignoră mesajul.
+
+confirmation.confirmed.title: Adresa a fost confirmată
+confirmation.confirmed.text: Mulțumim. Adresa %email% este confirmată.
+confirmation.invalid.title: Linkul nu mai este valabil
+confirmation.invalid.text: >-
+    Linkul a fost deja folosit sau nu există. Dacă adresa nu este încă confirmată, autentifică-te
+    și cere un link nou din contul tău.
+
+confirmation.account.label: Adresă confirmată
+confirmation.account.yes: Da
+confirmation.account.no: Nu încă
+confirmation.resend: Trimite linkul din nou
+confirmation.resend.help: >-
+    Confirmarea nu blochează autentificarea, dar marchează adresa ca fiind a ta.
+confirmation.resent: Ți-am trimis un link nou de confirmare.
+
 login.title: Autentificare
 login.email: Adresă de e-mail
 login.password: Parolă

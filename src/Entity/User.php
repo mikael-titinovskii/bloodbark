@@ -21,6 +21,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'app_user')]
 #[ORM\UniqueConstraint(name: 'uniq_app_user_email', columns: ['email'])]
+#[ORM\UniqueConstraint(name: 'uniq_app_user_confirmation_token_hash', columns: ['confirmation_token_hash'])]
 #[UniqueEntity(fields: ['email'], message: 'register.email.taken')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -70,6 +71,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $adultConfirmedAt = null;
+
+    /**
+     * Set when the holder of the mailbox follows the link mailed at registration. Nothing else in
+     * the app depends on it yet except the super admin promotion — but it is what makes that
+     * promotion proof of address rather than a guess at one.
+     */
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $confirmedAt = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $confirmationTokenHash = null;
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
@@ -211,6 +223,43 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function confirmAdulthood(\DateTimeImmutable $at): static
     {
         $this->adultConfirmedAt = $at;
+
+        return $this;
+    }
+
+    public function isConfirmed(): bool
+    {
+        return null !== $this->confirmedAt;
+    }
+
+    public function getConfirmedAt(): ?\DateTimeImmutable
+    {
+        return $this->confirmedAt;
+    }
+
+    public function getConfirmationTokenHash(): ?string
+    {
+        return $this->confirmationTokenHash;
+    }
+
+    /**
+     * Starts (or replaces) the confirmation link. Asking again makes the previous link stop working,
+     * the same way a new reset link retires the old one.
+     */
+    public function startConfirmation(string $tokenHash): static
+    {
+        $this->confirmationTokenHash = $tokenHash;
+
+        return $this;
+    }
+
+    /**
+     * Records that the address was confirmed and spends the link in one step.
+     */
+    public function confirm(\DateTimeImmutable $at): static
+    {
+        $this->confirmedAt = $at;
+        $this->confirmationTokenHash = null;
 
         return $this;
     }

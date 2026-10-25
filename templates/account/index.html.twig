@@ -11,6 +11,10 @@
             <dd class="text-stone-900">{{ app.user.email }}</dd>
         </div>
         <div class="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-6">
+            <dt class="font-medium text-stone-500">{{ 'confirmation.account.label'|trans }}</dt>
+            <dd class="text-stone-900">{{ (app.user.confirmed ? 'confirmation.account.yes' : 'confirmation.account.no')|trans }}</dd>
+        </div>
+        <div class="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-6">
             <dt class="font-medium text-stone-500">{{ 'account.contact_name'|trans }}</dt>
             <dd class="text-stone-900">{{ app.user.contactName }}</dd>
         </div>
@@ -27,6 +31,18 @@
             <dd class="text-stone-900">{{ 'account.consent.record'|trans({'%version%': app.user.consentPolicyVersion, '%date%': app.user.consentAt|date('Y-m-d')}) }}</dd>
         </div>
     </dl>
+
+    {% for message in app.flashes('confirmation_sent') %}
+        <p role="status" class="mt-8 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{{ message|trans }}</p>
+    {% endfor %}
+
+    {% if not app.user.confirmed %}
+        <form method="post" action="{{ path('app_confirm_email_resend') }}" class="mt-8">
+            <input type="hidden" name="_token" value="{{ csrf_token('resend_confirmation') }}">
+            <button type="submit" class="inline-flex items-center rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm hover:bg-stone-100 focus:ring-2 focus:ring-stone-300 focus:outline-none">{{ 'confirmation.resend'|trans }}</button>
+        </form>
+        <p class="mt-2 text-xs text-stone-500">{{ 'confirmation.resend.help'|trans }}</p>
+    {% endif %}
 
     {# Logout is a POST: the firewall checks the CSRF token in `_csrf_token`. #}
     <form method="post" action="{{ path('_logout_main') }}" class="mt-8">
