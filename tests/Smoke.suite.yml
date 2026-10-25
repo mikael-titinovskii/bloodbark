@@ -1,0 +1,11 @@
+# Smoke suite: plain HTTP requests through nginx, PHP-FPM and the database — no browser.
+# This is where "does it still answer" belongs; keep real page interaction in the
+# Acceptance suite. E2E_BASE_URL is set by compose (https://nginx).
+actor: SmokeTester
+modules:
+    enabled:
+        - PhpBrowser:
+              # nginx serves the dev stack over a self-signed certificate.
+              verify: false
+              url: '%E2E_BASE_URL%'
+        - Asserts

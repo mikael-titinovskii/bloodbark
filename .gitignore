@@ -21,3 +21,7 @@
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
+###> codeception ###
+/tests/Support/_generated/
+###< codeception ###

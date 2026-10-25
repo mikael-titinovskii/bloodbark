@@ -12,7 +12,7 @@ services:
       - './docker/nginx/certs/selfsigned.crt:/etc/nginx/certs/selfsigned.crt:ro'
       - './docker/nginx/certs/selfsigned.key:/etc/nginx/certs/selfsigned.key:ro'
     ports:
-      - '8000:80'
+      - '8000:443'
 
   php:
     build:
@@ -26,6 +26,12 @@ services:
     environment:
       COMPOSER_CACHE_DIR: /tmp/composer/cache
       COMPOSER_HOME: /tmp/composer
+      # The container user has no passwd entry, so HOME is unwritable by default; Chromium
+      # refuses to start without one. Nothing else in the stack needs it.
+      HOME: /tmp
+      # Where the Codeception suites (`make ee`) point their browser and their HTTP client.
+      # `nginx` is this network's front door; override from the host with E2E_BASE_URL.
+      E2E_BASE_URL: ${E2E_BASE_URL:-https://nginx}
       XDEBUG_MODE: develop,debug
       XDEBUG_CONFIG: client_host=host.docker.internal client_port=9002
       PHP_IDE_CONFIG: serverName=bloodbark

@@ -2,6 +2,13 @@ parameters:
     level: 8
     paths:
         - src
+        - tests
+    excludePaths:
+        analyse:
+            # Written by `codecept build`, not by hand.
+            - tests/Support/_generated
+            # Symfony recipe boilerplate.
+            - tests/bootstrap.php
     checkUninitializedProperties: true
     symfony:
         containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml

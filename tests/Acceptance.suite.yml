@@ -1,0 +1,28 @@
+# Acceptance suite: a real headless Chromium in the `php` container drives the running site,
+# so every test here goes through nginx, PHP-FPM and the database like a visitor does.
+# E2E_BASE_URL is set by compose (https://nginx, the front door of the compose network).
+actor: AcceptanceTester
+extensions:
+    enabled:
+        # Chromedriver is in the image, but the WebDriver module only talks the protocol over
+        # HTTP — it never launches a driver — so the suite starts and stops one itself.
+        - Codeception\Extension\RunProcess:
+            0: chromedriver --port=4444 --url-base=/wd/hub --disable-dev-shm-usage --log-path=/tmp/chromedriver.log
+            sleep: 2
+modules:
+    enabled:
+        - WebDriver:
+              url: '%E2E_BASE_URL%'
+              browser: chrome
+              window_size: 1440x900
+              capabilities:
+                  # nginx serves the dev stack over a self-signed certificate.
+                  acceptInsecureCerts: true
+                  goog:chromeOptions:
+                      args:
+                          - '--headless=new'
+                          - '--no-sandbox'
+                          - '--disable-dev-shm-usage'
+                          - '--disable-gpu'
+                          - '--ignore-certificate-errors'
+        - Asserts

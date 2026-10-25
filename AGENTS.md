@@ -135,6 +135,9 @@ only as literal filter results, never as recommendations.
   Validator for validation, Serializer for JSON, Messenger for async work,
   Security (voters, authenticators) for access control, Twig `path()`/`url()`
   instead of hardcoded URLs.
+- Pages are Twig templates under `templates/`, extending `templates/base.html.twig`; the controller
+  renders them and holds no markup. `base.html.twig` carries the site-wide scope banner, so new pages get it
+  for free and must not re-add their own copy of it.
 - Before hand-writing infrastructure (locks, queues, caches, HTTP clients,
   mailers, schedulers) or reaching for a third-party library, check whether a
   Symfony component covers it. It usually does.
@@ -158,9 +161,13 @@ PHP-FPM, nginx and the TLS certs live in `docker/` and are wired up by `compose.
 run everything through the `php` service:
 
 - `make up` — site at https://127.0.0.1:8000 (HTTPS only, self-signed cert: accept the warning).
-  `make down` stops it. Both wrap `docker compose up -d` / `docker compose down`.
-- `make ee CMD="php bin/console …"` runs one command in the `php` container; bare `make ee` opens a shell in it
+  `make down` stops it. Both wrap `docker compose up -d --wait` / `docker compose down`. nginx listens with TLS on
+  443 and `compose.yaml` publishes it as `8000:443`, so inside the compose network the site is `https://nginx`.
+- `make shell CMD="php bin/console …"` runs one command in the `php` container; bare `make shell` opens a shell in it
   (the image is Alpine, so `sh`, not bash). `bin/*` is not executable on the bind mount — always prefix with `php`.
+- The image carries headless Chromium and chromedriver for the acceptance suite, plus `ext-zip` (Codeception's
+  WebDriver client needs it). Chromium refuses to start without a writable `HOME`, so the `php` service sets
+  `HOME=/tmp`; that is the only reason the variable is there.
 - The `database` service is PostgreSQL 18 (`postgres:18-alpine`) with its data in the `database_data` volume;
   `php` waits for its healthcheck. The image keeps `PGDATA` under `/var/lib/postgresql/18/docker`, so the volume is
   mounted at `/var/lib/postgresql`, not `/data`.
@@ -204,6 +211,35 @@ Tests run against PostgreSQL too: the `test` environment renames the database to
 `dbname_suffix`), so run `make db-create` once, and apply schema changes to it with
 `php bin/console doctrine:migrations:migrate --env=test`.
 
+### End-to-end: Codeception suites
+
+`make ee` is the end-to-end gate. Codeception (PHP-native — root `codeception.yml`, suites in
+`tests/<Suite>.suite.yml`) runs two suites against the **running** site, in this container:
+
+- `Smoke` (`tests/Smoke`, `PhpBrowser`): plain HTTP through nginx → PHP-FPM → database, no browser. This is
+  where "is it up, does it answer 200" belongs. `tests/Smoke/HomepageCest.php` is the homepage 200 check.
+- `Acceptance` (`tests/Acceptance`, `WebDriver`): headless Chromium in the `php` container, for real page
+  interaction — clicks, forms, what a visitor sees. Codeception's `RunProcess` extension starts and stops
+  chromedriver around the suite.
+
+`ee` depends on `up` and clears the dev cache before running, so one command covers a cold checkout and never
+tests a stale container cache. `PhpBrowser` and `WebDriver` cannot share a suite (the WebDriver module
+conflicts with any other `Web` module), which is why there are two. Both are HTTP end-to-end: they go through
+nginx, not an in-process kernel.
+
+- The base URL is `E2E_BASE_URL` from `compose.yaml` (`https://nginx`, what nginx answers inside the compose
+  network). Override it in the environment before `make up` to point the suites elsewhere.
+- Run one suite with `make shell CMD="php vendor/bin/codecept run Smoke"`; add `--debug` there for step-by-step
+  requests, headers and status codes.
+- Actor classes (`tests/Support/SmokeTester.php`, `AcceptanceTester.php`, and `_generated/` actions) come from
+  `codecept build`; `codecept run` regenerates them. `_generated/` is git-ignored, and both generated actor
+  files and `_generated` are excluded from php-cs-fixer and PHPStan — do not hand-format them.
+- Failures leave a screenshot (browser suite only) plus the response HTML in `var/codeception/`.
+- The site these run against is the **dev** container, so its cache and its database are the dev ones. Keep
+  suites read-only until there is a fixture story; don't write to the dev database from a test.
+- Keep using PHPUnit (`make unit`) for controller/service level work: Codeception is the outermost gate, not a
+  replacement for functional tests.
+
 ## Checks: style and static analysis
 
 `make lint` runs everything below; the individual composer scripts are there when
@@ -212,16 +248,17 @@ only one of them is needed:
 - `composer cs:check`: php-cs-fixer dry run with a diff; `composer cs:fix` writes
   the fixes. The `@Symfony` ruleset (PSR-12-derived superset) is configured in
   `.php-cs-fixer.dist.php`. It only scans `*.php`, so `bin/console` is not checked.
-- `composer phpstan`: PHPStan at level 8 over `src/`, configured in
+- `composer phpstan`: PHPStan at level 8 over `src/` and `tests/`, configured in
   `phpstan.dist.neon`, with `phpstan/phpstan-strict-rules` and
   `checkUninitializedProperties` on. The Symfony extension (`phpstan/phpstan-symfony`,
   loaded by `phpstan/extension-installer`) resolves services from
   `var/cache/dev/App_KernelDevDebugContainer.xml`, so warm the dev cache first if
-  that file is missing. Widen `paths` as directories appear — `tests` once it exists.
+  that file is missing. Widen `paths` as directories appear, and exclude generated
+  code (today only `tests/Support/_generated`).
   Don't lower the level or add inline ignores to make a run pass; if a codebase-wide
   upgrade ever needs it, use `--generate-baseline`.
-- `composer check`: both, style first. `make lint` also runs `lint:container` and
-  `lint:yaml config/` after those two.
+- `composer check`: both, style first. `make lint` also runs `lint:container`,
+  `lint:yaml config/` and `lint:twig templates/` after those two.
 
 A change isn't done while any of them is red. `make lint` and `make unit` already set
 `XDEBUG_MODE=off` (the compose stack otherwise spends a second per PHP process trying
@@ -237,8 +274,8 @@ things up in the project instead of relying on memory:
 - `bin/console debug:router`, `debug:container`, `debug:autowiring <name>`,
   `debug:config <bundle>`, `config:dump-reference <bundle>`: what exists and how
   it is configured.
-- `bin/console lint:container`, plus `lint:twig templates/` and
-  `lint:yaml config/` where those packages are installed: validate before running.
+- `bin/console lint:container`, `lint:yaml config/`, `lint:twig templates/`: validate before running
+  (all three are part of `make lint`).
 - Read the installed source and docblocks under `vendor/`.
 - Docs: https://symfony.com/doc/current/ (switch to the version matching
   `composer.json` if it differs).

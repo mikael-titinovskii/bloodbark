@@ -6,8 +6,9 @@
 #   make migrate      run pending Doctrine migrations
 #   make lint         php-cs-fixer, phpstan, container and yaml linters
 #   make unit         PHPUnit (phpunit.dist.xml)
-#   make ee           shell in the php container (Alpine image: sh, no bash)
-#   make ee CMD="php bin/console debug:router"   one command in the php container
+#   make ee           Codeception suites against the running site (`ee` starts it)
+#   make shell        shell in the php container (Alpine image: sh, no bash)
+#   make shell CMD="php bin/console debug:router"   one command in the php container
 #                     (`php` is not optional: bin/ is not executable on the bind mount)
 
 SHELL := /bin/sh
@@ -15,10 +16,10 @@ SHELL := /bin/sh
 COMPOSE := docker compose
 PHP := $(COMPOSE) exec -T -e XDEBUG_MODE=off php
 
-.PHONY: up down db-create migrate lint unit ee
+.PHONY: up down db-create migrate lint unit ee shell
 
 up:
-	$(COMPOSE) up -d
+	$(COMPOSE) up -d --wait
 
 down:
 	$(COMPOSE) down
@@ -35,9 +36,16 @@ lint:
 	$(PHP) composer phpstan
 	$(PHP) php bin/console lint:container
 	$(PHP) php bin/console lint:yaml config/
+	$(PHP) php bin/console lint:twig templates/
 
 unit:
 	$(PHP) php bin/phpunit
 
-ee:
+# The site is served from the dev container cache, which can lag behind an edit by a request;
+# clearing it first keeps a run from testing yesterday's routes.
+ee: up
+	$(PHP) php bin/console cache:clear
+	$(PHP) php vendor/bin/codecept run
+
+shell:
 	$(COMPOSE) exec $(if $(strip $(CMD)),-T -e XDEBUG_MODE=off) php $(or $(strip $(CMD)),sh)

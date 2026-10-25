@@ -15,9 +15,16 @@
         "symfony/flex": "^2",
         "symfony/framework-bundle": "8.1.*",
         "symfony/runtime": "8.1.*",
-        "symfony/yaml": "8.1.*"
+        "symfony/twig-bundle": "8.1.*",
+        "symfony/yaml": "8.1.*",
+        "twig/extra-bundle": "^2.12|^3.0",
+        "twig/twig": "^2.12|^3.0"
     },
     "require-dev": {
+        "codeception/codeception": "^5.3",
+        "codeception/module-asserts": "^3.3",
+        "codeception/module-phpbrowser": "^4.1",
+        "codeception/module-webdriver": "^4.0",
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.3",
