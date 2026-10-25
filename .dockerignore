@@ -7,3 +7,4 @@ compose.yaml
 docker/nginx/certs/
 vendor/
 var/
+node_modules/

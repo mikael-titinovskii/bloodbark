@@ -40,6 +40,24 @@ services:
     volumes:
       - './:/home/docker/src'
 
+  node:
+    image: node:24-alpine
+    # Not part of the site's runtime: `up` leaves it alone, and `docker compose run --rm node …`
+    # (which activates the profile) is the only way it is used.
+    profiles: ['tools']
+    # Same reason as php: run as the host user, so node_modules and the build output in public/ stay
+    # editable outside the container.
+    user: '${UID:-1000}:${GID:-1000}'
+    working_dir: /home/docker/src
+    environment:
+      # The container user has no passwd entry, so npm needs HOME spelled out.
+      HOME: /tmp
+      # Inside the project (and git-ignored, with the rest of var/) so a one-off container does not
+      # re-download every package on each run.
+      npm_config_cache: /home/docker/src/var/npm-cache
+    volumes:
+      - './:/home/docker/src'
+
 ###> doctrine/doctrine-bundle ###
   database:
     image: postgres:18-alpine

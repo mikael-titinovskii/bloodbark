@@ -9,6 +9,10 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
+# JS dependencies and the Vite build output (`make assets` writes public/assets).
+/node_modules/
+/public/assets/
+
 # Local development only — regenerate with `make certs`-style openssl call.
 /docker/nginx/certs/
 
@@ -29,3 +33,6 @@
 ###> jetbrains ###
 /.idea/
 ###< jetbrains ###
+
+# Local-only agent instructions, loaded by Kimi Code but never committed.
+/.kimi-code/AGENTS.md

@@ -6,8 +6,10 @@
 #   make down         stop and remove the dev stack (its database volume survives)
 #   make db-create    create the dev and test databases if they are missing
 #   make migrate      run pending Doctrine migrations
-#   make lint         php-cs-fixer, phpstan, container, yaml and twig linters
+#   make lint         php-cs-fixer, phpstan, eslint, container, yaml and twig linters
 #   make unit         PHPUnit (phpunit.dist.xml), test database in the dev stack
+#   make assets       build the JS bundle into public/assets (vite)
+#   make npm CMD="install left-pad"   one npm command, in the node service
 #   make ee-up        bring the e2e environment up: containers, empty migrated database, fixtures
 #   make ee           `ee-up`, then Codeception Smoke + Acceptance
 #   make ee-down      stop and remove the e2e stack (its database volume survives)
@@ -19,11 +21,14 @@ SHELL := /bin/sh
 
 COMPOSE := docker compose
 PHP := $(COMPOSE) exec -T -e XDEBUG_MODE=off php
+# npm runs in the node service, not on the host: the checkout is on the WSL filesystem and Windows
+# npm cannot run package install scripts across that share.
+NODE := $(COMPOSE) run --rm --no-deps node
 
 EE := $(COMPOSE) -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml
 EE_PHP := $(EE) exec -T php
 
-.PHONY: up down db-create migrate lint unit ee ee-up ee-down shell
+.PHONY: up down db-create migrate lint unit assets assets-watch npm ee ee-up ee-down shell
 
 up:
 	$(COMPOSE) up -d --wait
@@ -41,12 +46,27 @@ migrate:
 lint:
 	$(PHP) composer cs:check
 	$(PHP) composer phpstan
+	$(NODE) npm run lint
 	$(PHP) php bin/console lint:container
-	$(PHP) php bin/console lint:yaml config/
+	$(PHP) php bin/console lint:yaml config/ translations/
 	$(PHP) php bin/console lint:twig templates/
 
 unit:
 	$(PHP) php bin/phpunit
+
+# The bundle is a build artifact in public/assets, which nginx serves straight off the bind mount,
+# so a rebuild needs no restart.
+assets:
+	$(NODE) npm run build
+
+# Same build, rebuilding on every change under assets/. Leave it running in its own terminal.
+assets-watch:
+	$(NODE) npm run watch
+
+# `make npm CMD="install left-pad"`. Packages land in node_modules on the bind mount (git-ignored);
+# the cache in var/npm-cache survives between one-off containers.
+npm:
+	$(NODE) npm $(CMD)
 
 ee-up:
 	$(EE) up -d --wait
