@@ -204,6 +204,29 @@ run everything through the `php` service:
   (git-ignored) or the secrets vault (`bin/console secrets:set`), read via
   `%env(...)%`.
 
+## Working safely
+
+- **No `rm -rf` anywhere in this tree.** Move aside instead —
+  `mv <path> <path>.trash-$(date +%s)` — and purge later. A mistaken
+  `rm -rf .git` once deleted this repository's history; the working tree survived,
+  the commits did not.
+- Scratch work (throwaway repositories, experiments, generated files) happens
+  outside the project, in `mktemp -d`. Never `git init` in a subdirectory of this
+  working copy.
+- Destructive commands name their target and show it first: `pwd`, then
+  `ls -d <path>`, then the command with an absolute path. No relative-path
+  navigation into a delete.
+- History has one copy outside this directory: `.git/hooks/post-commit` mirrors
+  every commit to `/home/mimit/backups/bloodbark.git`. Check it with
+  `git --git-dir=/home/mimit/backups/bloodbark.git log --oneline`. Do not delete,
+  rewrite or "clean up" that mirror.
+- Git runs on both sides of the `\\wsl.localhost` share, so `core.filemode=false`
+  (Windows cannot set exec bits; they are meaningless on the bind mount) and
+  `.gitattributes` pins `eol=lf` (Windows' global `core.autocrlf=true` would
+  otherwise write CRLF into `bin/*`, `Dockerfile` and `*.sh`). `commit.gpgsign` is
+  global but the signing key lives on Windows only, so commits from WSL need
+  `git -c commit.gpgsign=false commit …`.
+
 ## Testing
 
 `symfony/test-pack` is installed: PHPUnit 13 with `phpunit.dist.xml`, bootstrapped by
