@@ -25,3 +25,7 @@
 ###> codeception ###
 /tests/Support/_generated/
 ###< codeception ###
+
+###> jetbrains ###
+/.idea/
+###< jetbrains ###
