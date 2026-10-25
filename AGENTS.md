@@ -161,6 +161,15 @@ run everything through the `php` service:
   `make down` stops it. Both wrap `docker compose up -d` / `docker compose down`.
 - `make ee CMD="php bin/console …"` runs one command in the `php` container; bare `make ee` opens a shell in it
   (the image is Alpine, so `sh`, not bash). `bin/*` is not executable on the bind mount — always prefix with `php`.
+- The `database` service is PostgreSQL 18 (`postgres:18-alpine`) with its data in the `database_data` volume;
+  `php` waits for its healthcheck. The image keeps `PGDATA` under `/var/lib/postgresql/18/docker`, so the volume is
+  mounted at `/var/lib/postgresql`, not `/data`.
+- It is published to the host only by `compose.override.yaml` (written by the Doctrine recipe): change the port there,
+  not in `compose.yaml`. From the host: `docker compose exec database psql -U bloodbark bloodbark`.
+- `DATABASE_URL` in `.env` points at `database:5432` with user, password and database all `bloodbark` — dev-only
+  credentials, hence committed. The container creates `bloodbark`; `make db-create` adds `bloodbark_test` (the
+  `_test` suffix comes from Doctrine's `dbname_suffix` under `when@test`). Server version is pinned to 18 in
+  `config/packages/doctrine.yaml`.
 - Logs: `docker compose logs -f php nginx`.
 - Xdebug listens for the IDE on port 9002; `PHP_IDE_CONFIG=serverName=bloodbark`, project root mounted at
   `/home/docker/src`.
@@ -170,13 +179,14 @@ run everything through the `php` service:
 ## Everyday workflow
 
 - When something fails, read `var/log/dev.log` and the web profiler (`/_profiler`) before changing code.
-- If `maker-bundle` is installed, prefer `bin/console make:*` with every argument
+- `maker-bundle` is installed: prefer `bin/console make:*` with every argument
   passed up front and `--no-interaction` where supported: makers prompt on a
   terminal by default, which hangs a non-interactive shell. If a maker still
   needs interactive input, hand-write the code instead.
-- If Doctrine ORM is installed, schema changes go through migrations (`bin/console make:migration`, then
-  `doctrine:migrations:migrate`), never
-  `doctrine:schema:update` or hand-written SQL.
+- Schema changes go through migrations: `bin/console make:migration` writes a class into `migrations/`,
+  `make migrate` (or `doctrine:migrations:migrate`) applies it. Never
+  `doctrine:schema:update` or hand-written SQL. `config/packages/doctrine.yaml` maps `App\Entity` with the attribute
+  driver, so entities are plain classes in `src/Entity`.
 - `.env` is committed and holds defaults only. Real secrets belong in `.env.local`
   (git-ignored) or the secrets vault (`bin/console secrets:set`), read via
   `%env(...)%`.
@@ -189,6 +199,10 @@ run everything through the `php` service:
 `php bin/phpunit`). A feature isn't done
 until it has a test that exercises it the way a caller would, an HTTP request for
 a controller or a service call for a service, not just "it didn't throw."
+
+Tests run against PostgreSQL too: the `test` environment renames the database to `bloodbark_test` (Doctrine's
+`dbname_suffix`), so run `make db-create` once, and apply schema changes to it with
+`php bin/console doctrine:migrations:migrate --env=test`.
 
 ## Checks: style and static analysis
 

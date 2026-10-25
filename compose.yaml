@@ -20,6 +20,9 @@ services:
       dockerfile: docker/php/Dockerfile
     # php-fpm as the host user, so var/ and vendor/ stay writable outside the container.
     user: '${UID:-1000}:${GID:-1000}'
+    depends_on:
+      database:
+        condition: service_healthy
     environment:
       COMPOSER_CACHE_DIR: /tmp/composer/cache
       COMPOSER_HOME: /tmp/composer
@@ -30,3 +33,27 @@ services:
       - 'host.docker.internal:host-gateway'
     volumes:
       - './:/home/docker/src'
+
+###> doctrine/doctrine-bundle ###
+  database:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bloodbark
+      POSTGRES_USER: bloodbark
+      POSTGRES_PASSWORD: bloodbark
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -d bloodbark -U bloodbark']
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      # PostgreSQL 18 keeps PGDATA under /var/lib/postgresql/<major>/docker, so
+      # the volume is mounted one level above the data directory.
+      - 'database_data:/var/lib/postgresql'
+###< doctrine/doctrine-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  database_data:
+###< doctrine/doctrine-bundle ###
