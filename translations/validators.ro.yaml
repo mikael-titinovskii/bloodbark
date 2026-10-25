@@ -1,0 +1,9 @@
+# Messages for the constraints the project declares (App\Entity\User, App\Form\RegistrationType).
+# Standard constraint messages are not repeated here: the validator component ships Romanian and
+# Russian catalogues of its own (vendor/symfony/validator/Resources/translations) and the
+# framework registers them with the translator.
+register.email.taken: Există deja un cont cu această adresă de e-mail.
+register.consent.required: Fără acordul pentru prelucrarea datelor nu putem crea contul.
+register.adult.required: Contul poate fi creat doar de persoane de 18 ani sau mai mari.
+reset.password.mismatch: Parolele nu coincid.
+reset.password.too_short: Parola este prea scurtă.

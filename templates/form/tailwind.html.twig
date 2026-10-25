@@ -1,0 +1,119 @@
+{#
+    The form theme the site renders every field with, registered in config/packages/twig.yaml.
+
+    Same shape as Symfony's own tailwind_2_layout.html.twig: the visual classes are defaults, so a
+    form type can override any of them per field (`'attr' => ['class' => ...]`, or the
+    `row_class` / `label_class` / `help_class` / `error_item_class` options for the whole row).
+    Blocks this file does not override come from form_div_layout through `use`.
+#}
+{% use 'form_div_layout.html.twig' %}
+
+{%- block form_row -%}
+    {%- set row_attr = row_attr|merge({class: row_attr.class|default(row_class|default('space-y-1.5'))}) -%}
+    {{- parent() -}}
+{%- endblock form_row -%}
+
+{%- block widget_attributes -%}
+    {#
+        Inputs, textareas and selects all reach this block, so the control look lives here once.
+        A checkbox or radio widget narrows `widget_class` just before calling parent(), which is
+        why the merge below only fills in a class when the widget has not set one. Hidden fields
+        (the CSRF token) are left alone: they carry no controls to style.
+    #}
+    {%- if type|default('') is same as('hidden') -%}
+        {{- parent() -}}
+    {%- else -%}
+        {%- set attr = attr|merge({
+            class: attr.class|default(widget_class|default('mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 focus:outline-none'))
+                ~ (disabled ? ' ' ~ widget_disabled_class|default('border-stone-200 bg-stone-100 text-stone-500'))
+                ~ (errors|length ? ' ' ~ widget_errors_class|default('border-rose-500')),
+        }) -%}
+        {{- parent() -}}
+    {%- endif -%}
+{%- endblock widget_attributes -%}
+
+{#
+    The parent implementation appends a `required` class to the label; nothing styles it, and the
+    attribute on the control already says the field is required, so this one does not.
+#}
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        {%- set label_attr = label_attr|merge({class: label_attr.class|default(label_class|default('block text-sm font-medium text-stone-700'))}) -%}
+        {%- if not compound -%}
+            {%- set label_attr = label_attr|merge({for: id}) -%}
+        {%- endif -%}
+        <{{ element|default('label') }}{% with {attr: label_attr} %}{{ block('attributes') }}{% endwith %}>{{ block('form_label_content') }}</{{ element|default('label') }}>
+    {%- endif -%}
+{%- endblock form_label -%}
+
+{%- block form_help -%}
+    {%- set help_attr = help_attr|merge({class: help_attr.class|default(help_class|default('text-xs text-stone-500'))}) -%}
+    {{- parent() -}}
+{%- endblock form_help -%}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <ul class="space-y-1">
+            {%- for error in errors -%}
+                <li class="{{ error_item_class|default('text-xs font-medium text-rose-700') }}" id="{{ id ~ '_error' ~ loop.index }}">{{ error.message }}</li>
+            {%- endfor -%}
+        </ul>
+    {%- endif -%}
+{%- endblock form_errors -%}
+
+{%- block choice_widget_expanded -%}
+    {%- set attr = attr|merge({class: attr.class|default('space-y-2')}) -%}
+    <div {{ block('widget_container_attributes') }}>
+        {%- for child in form %}
+            <div class="flex items-center gap-2">
+                {{- form_widget(child, {attr: {class: 'size-4 rounded-full border-stone-300 text-rose-700 focus:ring-2 focus:ring-rose-200'}}) -}}
+                {{- form_label(child, null, {translation_domain: choice_translation_domain, label_attr: {class: 'text-sm text-stone-700'}}) -}}
+            </div>
+        {% endfor -%}
+    </div>
+{%- endblock choice_widget_expanded -%}
+
+{#
+    A checkbox row reads as one line: the box next to its sentence, with any validation error
+    underneath rather than above the line the error is about.
+#}
+{%- block checkbox_row -%}
+    {%- set row_attr = row_attr|merge({class: row_attr.class|default(row_class|default('space-y-1.5'))}) -%}
+    {# The row's own help and error ids, so the box describes what it failed on. #}
+    {%- set described_by = [] -%}
+    {%- if help -%}
+        {%- set described_by = described_by|merge([id ~ '_help']) -%}
+    {%- endif -%}
+    {%- if errors|length > 0 -%}
+        {%- set described_by = described_by|merge(errors|map((_, index) => id ~ '_error' ~ (index + 1))) -%}
+    {%- endif -%}
+    {%- set described_by_attr = described_by is not empty ? {'aria-describedby': described_by|join(' ')} : {} -%}
+    {%- if errors|length > 0 -%}
+        {%- set widget_attr = {attr: described_by_attr|merge({'aria-invalid': 'true'})} -%}
+    {%- else -%}
+        {%- set widget_attr = {attr: described_by_attr} -%}
+    {%- endif -%}
+    <div{% with {attr: row_attr} %}{{ block('attributes') }}{% endwith %}>
+        <div class="flex items-start gap-3">
+            {{- form_widget(form, widget_attr) -}}
+            {{- form_label(form, null, {label_attr: {class: 'text-sm leading-6 text-stone-700'}}) -}}
+        </div>
+        {{- form_errors(form) -}}
+        {{- form_help(form) -}}
+    </div>
+{%- endblock checkbox_row -%}
+
+{%- block checkbox_widget -%}
+    {%- set widget_class = widget_class|default('mt-0.5 size-4 shrink-0 rounded border-stone-300 text-rose-700 focus:ring-2 focus:ring-rose-200') -%}
+    {{- parent() -}}
+{%- endblock checkbox_widget -%}
+
+{%- block radio_widget -%}
+    {%- set widget_class = widget_class|default('mt-0.5 size-4 shrink-0 rounded-full border-stone-300 text-rose-700 focus:ring-2 focus:ring-rose-200') -%}
+    {{- parent() -}}
+{%- endblock radio_widget -%}
+
+{%- block submit_widget -%}
+    {%- set attr = attr|merge({class: attr.class|default('inline-flex items-center justify-center rounded-md bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-800 focus:ring-2 focus:ring-rose-300 focus:outline-none')}) -%}
+    {{- parent() -}}
+{%- endblock submit_widget -%}

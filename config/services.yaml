@@ -7,6 +7,16 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # The version of the privacy policy and terms the consent checkbox names, and the value every
+    # registration stores next to its timestamp. Bump it whenever that text changes: a record of
+    # what a user agreed to only means something if the number moves with the document.
+    app.legal.policy_version: '1.0'
+
+    # Sender of the transactional mail. `no-reply@bloodbark.md` is a placeholder: set the real
+    # address before launch, here or with MAILER_SENDER in `.env.local`.
+    app.mailer.sender_address: 'no-reply@bloodbark.md'
+    app.mailer.sender_name: 'Bloodbark'
+    app.mailer.sender: '%env(default:app.mailer.sender_address:MAILER_SENDER)%'
 
 services:
     # default configuration for services in *this* file

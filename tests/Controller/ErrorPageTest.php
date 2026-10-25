@@ -17,7 +17,7 @@ final class ErrorPageTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(404);
         self::assertSelectorTextContains('h1', 'Pagina nu a fost găsită');
-        self::assertSelectorTextContains('main', 'Nu suntem un serviciu de urgență.');
+        self::assertSelectorTextContains('footer', 'Nu suntem un serviciu de urgență.');
         self::assertSelectorTextContains('footer', 'Suntem un serviciu de informare');
         self::assertSelectorExists('head script[type="module"][src="/assets/app.js"]');
         self::assertSelectorExists('main a[href="/"]');

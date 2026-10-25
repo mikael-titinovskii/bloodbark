@@ -1,5 +1,8 @@
 twig:
     file_name_pattern: '*.twig'
+    # Every form renders through the site's Tailwind theme, so a form_row() carries the control
+    # styling without each template restating it. Config/forms can still override per field.
+    form_themes: ['form/tailwind.html.twig']
     globals:
         # framework.enabled_locales, so the language switcher and framework.enabled_locales cannot
         # drift apart.

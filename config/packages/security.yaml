@@ -1,0 +1,65 @@
+# Sign-up mails a generated password; there is no self-chosen one, and no password reset flow yet.
+#
+# Roles: every account is a ROLE_USER. ROLE_MODERATOR is granted by a super admin (or by
+# `app:user:promote`) and unlocks the moderator sections; ROLE_SUPER_ADMIN is the admin backoffice
+# and the role needed to hand out moderator. The hierarchy only decides which pages open, never
+# what a listing says.
+security:
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    providers:
+        # Not the entity provider: that would compare the submitted address byte for byte, while
+        # login forms hand back whatever casing the visitor typed. See App\Security\UserProvider.
+        users:
+            id: App\Security\UserProvider
+
+    role_hierarchy:
+        ROLE_MODERATOR: [ROLE_USER]
+        ROLE_SUPER_ADMIN: [ROLE_MODERATOR]
+
+    firewalls:
+        dev:
+            # Ensure dev tools and static assets are always allowed
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+        main:
+            lazy: true
+            provider: users
+
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                username_parameter: email
+                password_parameter: password
+                default_target_path: app_account
+                enable_csrf: true
+
+            # The target is a route name, so a Russian visitor lands on /ru after logging out.
+            # Route and controller live in the framework (`_logout_main`), nothing to write here.
+            logout:
+                enable_csrf: true
+                target: app_home
+
+            # Five wrong passwords per account+IP per quarter of an hour. A successful login clears
+            # the counter, and the generated passwords make guessing a non-starter anyway.
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+
+    # Note: Only the *first* matching rule is applied; everything not listed is public.
+    # The optional `ru/` segment is the locale prefix of the same route (see config/routes.yaml).
+    access_control:
+        - { path: '^/(ru/)?account', roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            # Password hashers are resource-intensive by design to ensure security.
+            # In tests, it's safe to reduce their cost to improve performance.
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

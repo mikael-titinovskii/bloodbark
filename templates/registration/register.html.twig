@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'register.title'|trans }} · Bloodbark{% endblock %}
+
+{% block body %}
+    <div class="mx-auto max-w-xl">
+        <h1 class="text-2xl font-semibold tracking-tight text-stone-900">{{ 'register.title'|trans }}</h1>
+        <p class="mt-2 text-sm text-stone-600">{{ 'register.intro'|trans }}</p>
+
+        {{ form_start(form, {attr: {class: 'mt-8 space-y-5 rounded-xl border border-stone-200 bg-white p-6 shadow-sm'}}) }}
+            {{ form_errors(form) }}
+            {{ form_row(form.email) }}
+            {{ form_row(form.contactName) }}
+            {{ form_row(form.contactType) }}
+            {{ form_row(form.contactWindow) }}
+            {{ form_row(form.consent) }}
+            {{ form_row(form.adult) }}
+            <p class="text-xs text-stone-500">{{ 'register.password.note'|trans }}</p>
+            {{ form_row(form.submit) }}
+        {{ form_end(form) }}
+
+        <p class="mt-6 text-sm text-stone-600">{{ 'register.have_account'|trans }} <a href="{{ path('app_login') }}" class="font-medium text-rose-700 underline-offset-2 hover:underline">{{ 'login.title'|trans }}</a></p>
+    </div>
+{% endblock %}

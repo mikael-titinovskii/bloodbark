@@ -13,6 +13,7 @@ scope.banner: >-
 emergency.notice: >-
     Мы не служба экстренной помощи. При острой ситуации немедленно обратитесь к ветеринарному врачу.
 locale.switcher: Язык
+nav.skip: Перейти к содержимому
 locale.name.ro: Română
 locale.name.ru: Русский
 error.404.title: Страница не найдена
@@ -21,4 +22,109 @@ error.404.text: >-
     главную страницу.
 error.generic.title: Не удалось выполнить запрос
 error.generic.text: Что-то пошло не так. Попробуйте ещё раз через несколько минут.
+error.429.title: Слишком много запросов
+error.429.text: >-
+    С этого подключения отправлено слишком много запросов. Подождите немного и попробуйте снова.
 error.back_home: Вернуться на главную страницу
+
+# --- Аккаунт ------------------------------------------------------------------------------
+# Labels are shared between the form types (which pass message keys), the account page and the
+# header, so a wording change happens once.
+register.title: Создать аккаунт
+register.intro: >-
+    Аккаунт позволяет публиковать объявления о своей собаке и получать сообщения от других
+    владельцев. Контактные данные не показываются в результатах поиска.
+register.email: Адрес электронной почты
+register.password.note: Пароль не выбирают — мы генерируем его и отправляем вам по почте.
+register.contact_name: Имя для связи
+register.contact_name.help: Как к вам обращаться другим пользователям.
+register.contact_type: Способ связи
+register.contact_type.placeholder: Выберите способ связи
+register.contact_window: Удобное время
+register.contact_window.placeholder: Выберите время
+register.consent: >-
+    Я прочитал(а) политику конфиденциальности и согласен(на) на обработку моих персональных
+    данных (версия %version%).
+register.adult: Подтверждаю, что мне исполнилось 18 лет.
+register.submit: Создать аккаунт
+register.have_account: Уже есть аккаунт?
+
+register.sent.title: Проверьте почту
+register.sent.text: Мы отправили пароль на %email%. Его можно сразу использовать для входа.
+register.sent.hint: Если письмо не пришло за несколько минут, загляните в папку «Спам».
+
+# Chrome shared by every message we send; the per-flow keys live with their own flow below.
+email.greeting: Здравствуйте,
+email.signature: Bloodbark — информационный сервис и сервис установления контактов.
+
+registration.email.subject: Ваш аккаунт Bloodbark
+registration.email.intro: Аккаунт для адреса %email% создан.
+registration.email.email_label: 'Эл. почта:'
+registration.email.password_label: 'Пароль:'
+registration.email.sign_in: 'Войти можно здесь:'
+registration.email.security: >-
+    Не передавайте этот пароль никому. Если вы не создавали аккаунт, проигнорируйте письмо.
+
+reset.title: Сброс пароля
+reset.intro: Мы пришлём ссылку для установки нового пароля.
+reset.email: Адрес электронной почты
+reset.submit: Отправить ссылку
+reset.back_to_login: Вернуться ко входу
+reset.forgot: Забыли пароль?
+
+reset.sent.title: Проверьте почту
+reset.sent.text: >-
+    Если для этого адреса есть аккаунт, мы отправили ссылку для сброса. Ссылка действует
+    %hours% ч.
+reset.sent.hint: Если вы не запрашивали сброс, проигнорируйте письмо. Пароль останется прежним.
+
+reset.invalid.title: Ссылка больше не действует
+reset.invalid.text: Срок ссылки истёк или она уже использована. Запросите новую.
+reset.invalid.action: Запросить новую ссылку
+
+reset.new_title: Новый пароль
+reset.new_intro: Новый пароль для %email%.
+reset.password: Новый пароль
+reset.password_repeat: Повторите пароль
+reset.password.help: Не менее 12 символов. Не используйте пароль, который уже есть у вас где-то ещё.
+reset.submit_new: Сменить пароль
+reset.done.message: Пароль изменён. Войдите с новым паролем.
+
+reset.email.subject: Сброс пароля Bloodbark
+reset.email.intro: Поступил запрос на сброс пароля для %email%.
+reset.email.expiry: Ссылка действует %hours% ч.
+reset.email.security: >-
+    Если вы не запрашивали сброс, проигнорируйте письмо. Пароль останется прежним.
+
+login.title: Вход
+login.email: Адрес электронной почты
+login.password: Пароль
+login.submit: Войти
+login.error: Неверный адрес электронной почты или пароль.
+login.no_account: Нет аккаунта?
+
+account.title: Мой аккаунт
+account.email: Адрес электронной почты
+account.contact_name: Имя для связи
+account.contact_type: Способ связи
+account.contact_window: Удобное время
+account.consent: Согласие
+account.consent.record: Версия %version%, дано %date%.
+account.logout: Выйти
+
+nav.account: Мой аккаунт
+nav.logout: Выйти
+nav.login: Вход
+nav.register: Регистрация
+
+contact.type.phone: Телефон
+contact.type.whatsapp: WhatsApp
+contact.type.telegram: Telegram
+contact.type.viber: Viber
+contact.type.facebook: Facebook
+contact.type.other: Другое
+
+contact.window.no_preference: Без предпочтений
+contact.window.morning: Утро
+contact.window.midday: Полдень
+contact.window.evening: Вечер

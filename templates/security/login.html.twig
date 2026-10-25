@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'login.title'|trans }} · Bloodbark{% endblock %}
+
+{% block body %}
+    <div class="mx-auto max-w-md">
+        <h1 class="text-2xl font-semibold tracking-tight text-stone-900">{{ 'login.title'|trans }}</h1>
+
+        {% if error %}
+            <p role="alert" class="mt-6 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{{ 'login.error'|trans }}</p>
+        {% endif %}
+
+        {# Set by the reset flow once the new password is saved. #}
+        {% for message in app.flashes('reset_done') %}
+            <p role="status" class="mt-6 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{{ message|trans }}</p>
+        {% endfor %}
+
+        {#
+            Posted to the same URL; the firewall's form_login reads `email`, `password` and the
+            CSRF token before this controller ever runs. Parameter names come from security.yaml.
+            The classes match the ones templates/form/tailwind.html.twig puts on form widgets, so
+            this hand-written form looks like the generated ones.
+        #}
+        <form method="post" action="{{ path('app_login') }}" class="mt-6 space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="space-y-1.5">
+                <label for="email" class="block text-sm font-medium text-stone-700">{{ 'login.email'|trans }}</label>
+                <input type="email" id="email" name="email" value="{{ last_username }}" autocomplete="email" required autofocus class="block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 focus:outline-none">
+            </div>
+            <div class="space-y-1.5">
+                <div class="flex items-baseline justify-between gap-3">
+                    <label for="password" class="block text-sm font-medium text-stone-700">{{ 'login.password'|trans }}</label>
+                    <a href="{{ path('app_forgot_password') }}" class="text-xs font-medium text-rose-700 underline-offset-2 hover:underline">{{ 'reset.forgot'|trans }}</a>
+                </div>
+                <input type="password" id="password" name="password" autocomplete="current-password" required class="block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 focus:outline-none">
+            </div>
+
+            <button type="submit" class="inline-flex items-center justify-center rounded-md bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-800 focus:ring-2 focus:ring-rose-300 focus:outline-none">{{ 'login.submit'|trans }}</button>
+        </form>
+
+        <p class="mt-6 text-sm text-stone-600">{{ 'login.no_account'|trans }} <a href="{{ path('app_register') }}" class="font-medium text-rose-700 underline-offset-2 hover:underline">{{ 'register.title'|trans }}</a></p>
+    </div>
+{% endblock %}

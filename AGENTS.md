@@ -26,6 +26,14 @@ escalation list live in `legal.md`. Read it before adding a feature, a field, a 
   banner — new pages must not re-add it. Error pages live in `templates/bundles/TwigBundle/Exception/`
   (`error404.html.twig`, `error.html` as the fallback for any other status) so the bundle's renderer picks them up; Twig
   only uses them with `debug: false`, so `tests/Controller/ErrorPageTest.php` boots a non-debug kernel to test them.
+- The layout owns the chrome: header, the single `<main>` (centred column, `id="main"` for the skip link) and the footer,
+  which holds the emergency notice and the scope statement so every page — error pages and empty states included — shows
+  both without a page template repeating them. A page fills `{% block body %}` with content only — no `<main>`, no outer
+  container — so every page inherits the same width and spacing.
+- Styling is Tailwind utilities written in the Twig, built from `assets/styles/app.css` into `public/assets/app.css` by
+  `make assets`; `make assets-watch` rebuilds as templates change. Forms render through `templates/form/tailwind.html.twig`
+  (`twig.form_themes` in `config/packages/twig.yaml`), which carries the control, label, help and error classes, so a
+  `form_row()` adds no classes of its own and a field's own `attr.class` still wins.
 
 ## Languages
 
@@ -42,6 +50,45 @@ global.
   are `translations/messages.<locale>.yaml` and may not fall back to English — the required strings in `legal.md` are
   the English originals, the RO/RU renderings ship. A new language is one `enabled_locales` entry, a
   `messages.<code>.yaml`, and its endonym under `locale.name.<code>` in both catalogs.
+- Constraint messages are a domain of their own: they belong in `translations/validators.<locale>.yaml`, not in the
+  messages catalogs. A key that only exists in `messages.<locale>.yaml` renders as the raw key inside a form error, which
+  is how `reset.password.too_short` first shipped.
+
+## Accounts and roles
+
+Registration is the only way an account is born and it mails a generated password. The single exception is the reset
+flow: a one-time link lets the account holder type a new password.
+
+- `App\Entity\User` (`app_user`) holds the contact details, the roles and the consent record. `ContactType` and
+  `ContactWindow` are enums under `src/Entity` implementing `TranslatableInterface`, so the form choices and the account
+  page translate their own labels — `contact.type.*` / `contact.window.*` in both catalogs.
+- `POST /register` binds `App\Form\RegistrationType` onto a fresh `User`, then `App\Service\RegistrationService` generates
+  the password (`App\Security\PasswordGenerator`: 20 characters, no punctuation, no lookalikes), hashes it, records the
+  consent with `app.legal.policy_version` and mails the plaintext once. The row is flushed only after the mail is away,
+  so a failing transport cannot leave an account whose password nobody received. The plaintext exists only in that
+  message — never log it, never store it.
+- The sender address is `app.mailer.sender`, `no-reply@bloodbark.md` until the real domain is set (`MAILER_SENDER`
+  overrides it). Bump `app.legal.policy_version` whenever the policy text changes: registrations store the version they
+  accepted, and an unchanged number makes that record meaningless.
+- Login is the firewall's `form_login` against `app_login` (`email`/`password` fields, `authenticate` CSRF token); logout
+  is the framework-generated `_logout_main` route, posted with the `logout` token. `App\Security\UserProvider` replaces
+  the entity provider, because a login form hands back whatever casing the visitor typed while addresses are stored
+  lowercased.
+- Every account is a `ROLE_USER`. `ROLE_MODERATOR` and `ROLE_SUPER_ADMIN` live in the same JSON column and — until an
+  admin screen exists — are granted from the console: `php bin/console app:user:promote <email> moderator|super_admin`.
+  The hierarchy in `security.yaml` makes them cumulative: super admin ⊃ moderator ⊃ user.
+- `access_control` matches local paths by regex (`^/(ru/)?account`), since every controller route exists once per
+  locale. New protected areas follow the same shape.
+- `PasswordResetRequest` (`app_password_reset_request`) keeps only the SHA-256 of a link token, one live row per account,
+  valid for `PasswordResetService::TTL_HOURS`. `POST /forgot-password` answers the same sentence for a known and an
+  unknown address (the form must not enumerate accounts), and `GET /reset-password/{token}` only renders the form — the
+  token is spent by the POST that saves the new password, because mail clients and scanners open links on their own. The
+  changed hash also logs that account's other sessions out, since the firewall compares it with the one stored at login.
+- Mail is the expensive part of both flows, so `POST /register` and `POST /forgot-password` spend one hit per submission
+  through `App\Security\RequestThrottle`, keyed by client IP: five an hour each, declared in `framework.rate_limiter`.
+  A refusal is a 429 carrying `Retry-After`, rendered by
+  `templates/bundles/TwigBundle/Exception/error429.html.twig`. Login has its own ceiling in the firewall
+  (`login_throttling`: 5 attempts per 15 minutes per account+IP, reset by a successful sign-in).
 
 ## Local stack (Docker)
 
@@ -147,6 +194,11 @@ caller would — an HTTP request for a controller, a service call for a service,
 PostgreSQL too (`bloodbark_test`, via Doctrine's `dbname_suffix`): run `make db-create` once and apply migrations with
 `php bin/console doctrine:migrations:migrate --env=test`.
 
+Rate-limiter counters live in `cache.rate_limiter`, which outlives a single test, so a functional test that submits a
+throttled form clears it through `App\Tests\Support\ClearsRateLimits`; otherwise the suite throttles itself instead of
+the app. That pool's namespace is derived from the container class, which is why `TooManyRequestsPageTest` (debug off)
+clears it through a non-debug kernel.
+
 ### End-to-end: Codeception suites
 
 `make ee` is the gate. Codeception (root `codeception.yml`, suites in `tests/<Suite>.suite.yml`) runs two suites against
@@ -186,7 +238,8 @@ Database lifecycle is why `ee` is a single command:
 - `composer cs:check` (dry run with a diff) / `composer cs:fix` — php-cs-fixer, `@Symfony` ruleset in
   `.php-cs-fixer.dist.php`, `*.php` only, so `bin/console` is not checked.
 - `composer phpstan` — level 8 over `src/` and `tests/`, configured in `phpstan.dist.neon`, with
-  `phpstan/phpstan-strict-rules` and `checkUninitializedProperties`. The Symfony extension resolves services from
+  `phpstan/phpstan-strict-rules`, `phpstan/phpstan-doctrine` (so a property the ORM fills in counts as written, and a
+  nullable property over a NOT NULL column is an error) and `checkUninitializedProperties`. The Symfony extension resolves services from
   `var/cache/dev/App_KernelDevDebugContainer.xml`, so warm the dev cache if that file is missing. Widen `paths` as
   directories appear; exclude generated code (today only `tests/Support/_generated`). Don't lower the level or add
   inline ignores — use `--generate-baseline` if an upgrade ever needs it.

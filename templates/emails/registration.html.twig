@@ -1,0 +1,27 @@
+{#
+    Sent by App\Mailer\RegistrationMailer. BodyRenderer switches the translator to the e-mail's
+    locale before rendering, so `trans` here follows the language the visitor registered in.
+#}
+<!doctype html>
+<html lang="{{ locale }}">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ 'registration.email.subject'|trans }}</title>
+    </head>
+    <body>
+        <p>{{ 'email.greeting'|trans }}</p>
+
+        <p>{{ 'registration.email.intro'|trans({'%email%': address}) }}</p>
+
+        <p>
+            {{ 'registration.email.email_label'|trans }} {{ address }}<br>
+            {{ 'registration.email.password_label'|trans }} <strong>{{ password }}</strong>
+        </p>
+
+        <p>{{ 'registration.email.sign_in'|trans }} <a href="{{ loginUrl }}">{{ loginUrl }}</a></p>
+
+        <p>{{ 'registration.email.security'|trans }}</p>
+
+        <p>{{ 'email.signature'|trans }}</p>
+    </body>
+</html>

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ app.locale }}">
+<html lang="{{ app.locale }}" class="h-full">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -32,20 +32,65 @@
         <script type="module" src="/assets/app.js"></script>
         {% endblock %}
     </head>
-    <body>
-        {% if route %}
-        <nav aria-label="{{ 'locale.switcher'|trans }}">
-            <ul>
-                {% for locale in supported_locales %}
-                {% set name = ('locale.name.' ~ locale)|trans %}
-                <li>{% if locale == app.locale %}<span lang="{{ locale }}" aria-current="true">{{ name }}</span>{% else %}<a href="{{ path(route, route_params|merge({_locale: locale})) }}" hreflang="{{ locale }}" lang="{{ locale }}">{{ name }}</a>{% endif %}</li>
-                {% endfor %}
-            </ul>
-        </nav>
-        {% endif %}
-        {% block body %}{% endblock %}
-        <footer>
-            <p>{{ 'scope.banner'|trans }}</p>
+    <body class="flex min-h-full flex-col bg-stone-50 text-stone-800 antialiased">
+        <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-rose-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">{{ 'nav.skip'|trans }}</a>
+
+        <header class="border-b border-stone-200 bg-white">
+            <div class="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4">
+                <a href="{{ path('app_home') }}" class="text-lg font-semibold tracking-tight text-stone-900">Bloodbark</a>
+
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    {% if route %}
+                    <nav aria-label="{{ 'locale.switcher'|trans }}" class="flex items-center gap-1 text-sm">
+                        {% for locale in supported_locales %}
+                        {% set name = ('locale.name.' ~ locale)|trans %}
+                        {% if locale == app.locale %}
+                        <span lang="{{ locale }}" aria-current="true" class="rounded-full bg-stone-900 px-3 py-1 font-medium text-white">{{ name }}</span>
+                        {% else %}
+                        <a href="{{ path(route, route_params|merge({_locale: locale})) }}" hreflang="{{ locale }}" lang="{{ locale }}" class="rounded-full px-3 py-1 font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900">{{ name }}</a>
+                        {% endif %}
+                        {% endfor %}
+                    </nav>
+                    {% endif %}
+                    {#
+                        Session-derived, so it renders the same on every page — including the error pages,
+                        which have no route. Logout is a POST form because the firewall checks its CSRF token.
+                    #}
+                    <nav aria-label="{{ 'nav.account'|trans }}" class="flex items-center gap-x-4 text-sm">
+                        {% if app.user %}
+                        <a href="{{ path('app_account') }}" class="font-medium text-stone-600 hover:text-stone-900">{{ 'nav.account'|trans }}</a>
+                        <form method="post" action="{{ path('_logout_main') }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                            <button type="submit" class="font-medium text-stone-600 hover:text-stone-900">{{ 'nav.logout'|trans }}</button>
+                        </form>
+                        {% else %}
+                        <a href="{{ path('app_login') }}" class="font-medium text-stone-600 hover:text-stone-900">{{ 'nav.login'|trans }}</a>
+                        <a href="{{ path('app_register') }}" class="rounded-md bg-rose-700 px-3 py-1.5 font-semibold text-white shadow-sm hover:bg-rose-800">{{ 'nav.register'|trans }}</a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        {#
+            One <main> for the whole site, so a page template can never forget it and every page
+            gets the same width and spacing. Templates extending this one fill `body` with content
+            only, no wrapper element of their own.
+        #}
+        <main id="main" class="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
+            {% block body %}{% endblock %}
+        </main>
+
+        {#
+            Both required strings live here, on every page: the scope statement first, the
+            emergency line last, in the same small print — no page template repeats either, so
+            error pages and empty states cannot lose them.
+        #}
+        <footer class="border-t border-stone-200 bg-white">
+            <div class="mx-auto w-full max-w-3xl space-y-2 px-4 py-6 text-xs leading-relaxed text-stone-500">
+                <p>{{ 'scope.banner'|trans }}</p>
+                <p>{{ 'emergency.notice'|trans }}</p>
+            </div>
         </footer>
     </body>
 </html>

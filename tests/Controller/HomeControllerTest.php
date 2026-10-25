@@ -14,7 +14,7 @@ final class HomeControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('html[lang="ro"]');
-        self::assertSelectorTextContains('main', 'Nu suntem un serviciu de urgență.');
+        self::assertSelectorTextContains('footer', 'Nu suntem un serviciu de urgență.');
         self::assertSelectorTextContains('footer', 'Suntem un serviciu de informare');
     }
 
@@ -25,7 +25,7 @@ final class HomeControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('html[lang="ru"]');
-        self::assertSelectorTextContains('main', 'Мы не служба экстренной помощи.');
+        self::assertSelectorTextContains('footer', 'Мы не служба экстренной помощи.');
         self::assertSelectorTextContains('footer', 'Мы — информационный сервис');
     }
 

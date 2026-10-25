@@ -13,6 +13,7 @@ scope.banner: >-
 emergency.notice: >-
     Nu suntem un serviciu de urgență. Într-un caz acut, contactați acum medicul veterinar.
 locale.switcher: Limba
+nav.skip: Sari la conținut
 locale.name.ro: Română
 locale.name.ru: Русский
 error.404.title: Pagina nu a fost găsită
@@ -20,4 +21,109 @@ error.404.text: >-
     Pagina cerută nu există sau a fost mutată. Verifică adresa sau întoarce-te la pagina principală.
 error.generic.title: Cererea nu a putut fi finalizată
 error.generic.text: Ceva nu a funcționat. Încearcă din nou în câteva momente.
+error.429.title: Prea multe cereri
+error.429.text: >-
+    Ai trimis prea multe cereri de la această conexiune. Așteaptă puțin și încearcă din nou.
 error.back_home: Înapoi la pagina principală
+
+# --- Cont ---------------------------------------------------------------------------------
+# Labels are shared between the form types (which pass message keys), the account page and the
+# header, so a wording change happens once.
+register.title: Creează un cont
+register.intro: >-
+    Contul îți permite să publici anunțuri despre câinele tău și să fii contactat de alți
+    proprietari. Datele tale de contact nu apar în rezultatele căutării.
+register.email: Adresă de e-mail
+register.password.note: Parola nu se alege, o generăm noi și ți-o trimitem pe e-mail.
+register.contact_name: Nume de contact
+register.contact_name.help: Cum vrei să ți se adreseze ceilalți utilizatori.
+register.contact_type: Tip de contact
+register.contact_type.placeholder: Alege tipul de contact
+register.contact_window: Interval orar preferat
+register.contact_window.placeholder: Alege intervalul
+register.consent: >-
+    Am citit politica de confidențialitate și accept prelucrarea datelor mele personale
+    (versiunea %version%).
+register.adult: Confirm că am împlinit 18 ani.
+register.submit: Creează contul
+register.have_account: Ai deja cont?
+
+register.sent.title: Verifică-ți e-mailul
+register.sent.text: Am trimis parola pe %email%. O poți folosi imediat pentru autentificare.
+register.sent.hint: Dacă mesajul nu apare în câteva minute, verifică și folderul de spam.
+
+# Chrome shared by every message we send; the per-flow keys live with their own flow below.
+email.greeting: Bună ziua,
+email.signature: Bloodbark — serviciu de informare și de punere în legătură.
+
+registration.email.subject: Contul tău Bloodbark
+registration.email.intro: Contul pentru adresa %email% a fost creat.
+registration.email.email_label: 'E-mail:'
+registration.email.password_label: 'Parolă:'
+registration.email.sign_in: 'Te poți autentifica aici:'
+registration.email.security: >-
+    Nu transmite această parolă nimănui. Dacă nu ai cerut crearea contului, ignoră mesajul.
+
+reset.title: Resetează parola
+reset.intro: Îți trimitem un link pentru a seta o parolă nouă.
+reset.email: Adresă de e-mail
+reset.submit: Trimite linkul
+reset.back_to_login: Înapoi la autentificare
+reset.forgot: Ai uitat parola?
+
+reset.sent.title: Verifică-ți e-mailul
+reset.sent.text: >-
+    Dacă există un cont pentru această adresă, am trimis un link de resetare. Linkul expiră în
+    %hours% ore.
+reset.sent.hint: Dacă nu ai cerut resetarea, ignoră mesajul. Parola rămâne neschimbată.
+
+reset.invalid.title: Linkul nu mai este valabil
+reset.invalid.text: Linkul a expirat sau a fost deja folosit. Cere unul nou.
+reset.invalid.action: Cere un link nou
+
+reset.new_title: Alege o parolă nouă
+reset.new_intro: Setezi parola pentru %email%.
+reset.password: Parolă nouă
+reset.password_repeat: Repetă parola
+reset.password.help: Minim 12 caractere. Nu folosi o parolă pe care o ai și în altă parte.
+reset.submit_new: Schimbă parola
+reset.done.message: Parola a fost schimbată. Te poți autentifica cu parola nouă.
+
+reset.email.subject: Resetarea parolei Bloodbark
+reset.email.intro: Cineva a cerut resetarea parolei pentru %email%.
+reset.email.expiry: Linkul expiră în %hours% ore.
+reset.email.security: >-
+    Dacă nu ai cerut resetarea, ignoră mesajul. Parola rămâne neschimbată.
+
+login.title: Autentificare
+login.email: Adresă de e-mail
+login.password: Parolă
+login.submit: Autentifică-te
+login.error: E-mailul sau parola nu sunt corecte.
+login.no_account: Nu ai cont?
+
+account.title: Contul meu
+account.email: Adresă de e-mail
+account.contact_name: Nume de contact
+account.contact_type: Tip de contact
+account.contact_window: Interval orar preferat
+account.consent: Consimțământ
+account.consent.record: Versiunea %version%, acceptată la %date%.
+account.logout: Ieși din cont
+
+nav.account: Contul meu
+nav.logout: Ieși din cont
+nav.login: Autentificare
+nav.register: Creează cont
+
+contact.type.phone: Telefon
+contact.type.whatsapp: WhatsApp
+contact.type.telegram: Telegram
+contact.type.viber: Viber
+contact.type.facebook: Facebook
+contact.type.other: Altul
+
+contact.window.no_preference: Fără preferință
+contact.window.morning: Dimineața
+contact.window.midday: La amiază
+contact.window.evening: Seara

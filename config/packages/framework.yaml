@@ -5,6 +5,19 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    # Two endpoints send mail, so an unthrottled loop there fills somebody's inbox. The key is the
+    # client IP (see App\Security\RequestThrottle): five an hour covers a household or an office
+    # behind one address without making the form a free email relay.
+    rate_limiter:
+        registration:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '1 hour'
+        password_reset:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '1 hour'
+
     #esi: true
     #fragments: true
 

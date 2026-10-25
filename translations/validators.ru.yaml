@@ -1,0 +1,7 @@
+# See validators.ro.yaml: only the project's own keys, the standard constraint messages come from
+# the validator component's bundled catalogue.
+register.email.taken: Аккаунт с таким адресом уже существует.
+register.consent.required: Без согласия на обработку данных мы не можем создать аккаунт.
+register.adult.required: Аккаунт могут создавать только лица 18 лет и старше.
+reset.password.mismatch: Пароли не совпадают.
+reset.password.too_short: Пароль слишком короткий.
