@@ -21,10 +21,13 @@
 SHELL := /bin/sh
 
 COMPOSE := docker compose
-PHP := $(COMPOSE) exec -T -e XDEBUG_MODE=off php
+# The runner in .github/workflows/ci.yml has no compose and no bind mount: `make lint PHP= NODE=`
+# there expands to the bare `composer`/`php`/`npm` calls its install steps put on PATH. Nothing else
+# overrides these two — locally the containers stay the only place they run.
+PHP ?= $(COMPOSE) exec -T -e XDEBUG_MODE=off php
 # npm runs in the node service, not on the host: the checkout is on the WSL filesystem and Windows
 # npm cannot run package install scripts across that share.
-NODE := $(COMPOSE) run --rm --no-deps node
+NODE ?= $(COMPOSE) run --rm --no-deps node
 
 EE := $(COMPOSE) -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml
 EE_PHP := $(EE) exec -T php

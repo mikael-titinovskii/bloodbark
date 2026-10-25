@@ -1,0 +1,99 @@
+name: CI
+
+# Pull requests only: `main` takes no direct pushes except the owner's, and those are covered by the
+# same checks when they arrive as a PR. See `make lint` / `make unit` for what each job runs.
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # `make` targets pass this to the container locally; there is no xdebug here, but keeping the
+  # variable set means the two paths differ only in where the binaries come from.
+  XDEBUG_MODE: 'off'
+  # Reachable from the runner; `.env`'s `database` hostname only resolves inside compose. The test
+  # environment appends `_test` through `dbname_suffix` in config/packages/doctrine.yaml.
+  DATABASE_URL: 'postgresql://bloodbark:bloodbark@127.0.0.1:5432/bloodbark'
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          # Mirrors docker/php/Dockerfile minus codeception's xdebug/redis/zip-only bits.
+          extensions: ctype, iconv, intl, pdo_pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: npm ci
+
+      # `composer phpstan` resolves services from this dump (phpstan.dist.neon -> symfony.containerXmlPath).
+      - run: php bin/console cache:warmup
+
+      - run: make lint PHP= NODE=
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      database:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: bloodbark
+          POSTGRES_PASSWORD: bloodbark
+          POSTGRES_DB: bloodbark
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bloodbark"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: ctype, iconv, intl, pdo_pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      # The schema has to exist: the tests drive real Doctrine repositories rather than fixtures.
+      - run: php bin/console doctrine:database:create --if-not-exists --env=test
+      - run: php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration --env=test
+
+      - run: make unit PHP=
