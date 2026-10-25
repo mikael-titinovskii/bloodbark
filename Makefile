@@ -21,10 +21,13 @@
 SHELL := /bin/sh
 
 COMPOSE := docker compose
-PHP := $(COMPOSE) exec -T -e XDEBUG_MODE=off php
+# The runner in .github/workflows/ci.yml has no compose and no bind mount: `make lint PHP= NODE=`
+# there expands to the bare `composer`/`php`/`npm` calls its install steps put on PATH. Nothing else
+# overrides these two — locally the containers stay the only place they run.
+PHP ?= $(COMPOSE) exec -T -e XDEBUG_MODE=off php
 # npm runs in the node service, not on the host: the checkout is on the WSL filesystem and Windows
 # npm cannot run package install scripts across that share.
-NODE := $(COMPOSE) run --rm --no-deps node
+NODE ?= $(COMPOSE) run --rm --no-deps node
 
 EE := $(COMPOSE) -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml
 EE_PHP := $(EE) exec -T php
@@ -44,8 +47,12 @@ db-create:
 migrate:
 	$(PHP) php bin/console doctrine:migrations:migrate --no-interaction
 
+# `codecept build` first: `tests/Support/*Tester.php` call methods that only exist on the actor
+# traits it generates, so phpstan reports every one of them as undefined until it has run. The output
+# is git-ignored and excluded from both phpstan and php-cs-fixer.
 lint:
 	$(PHP) composer cs:check
+	$(PHP) php vendor/bin/codecept build
 	$(PHP) composer phpstan
 	$(NODE) npm run lint
 	$(PHP) php bin/console lint:container
