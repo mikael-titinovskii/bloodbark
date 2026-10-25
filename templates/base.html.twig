@@ -1,16 +1,45 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ app.locale }}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %}Bloodbark{% endblock %}</title>
+        {#
+            The matcher hands back the unsuffixed route name (app_home, not app_home.ro / app_home.ru)
+            while the generator registers one route per locale; passing `_locale` to path() or url()
+            selects the one to link to. Both are absent on error pages, which have no route at all.
+        #}
+        {%- set route = app.request.attributes.get('_route') -%}
+        {%- set route_params = app.request.attributes.get('_route_params') %}
+        {%- if route %}
+        {%- for locale in supported_locales %}
+        <link rel="alternate" hreflang="{{ locale }}" href="{{ url(route, route_params|merge({_locale: locale})) }}">
+        {%- endfor %}
+        {%- endif %}
         {% block stylesheets %}{% endblock %}
-        {% block javascripts %}{% endblock %}
+        {#
+            Built by Vite into public/assets under stable names (`make assets`), so the file is
+            named here and no manifest lookup is involved. A page with its own bundle overrides
+            this block and calls the parent first.
+        #}
+        {% block javascripts %}
+        <script type="module" src="/assets/app.js"></script>
+        {% endblock %}
     </head>
     <body>
+        {% if route %}
+        <nav aria-label="{{ 'locale.switcher'|trans }}">
+            <ul>
+                {% for locale in supported_locales %}
+                {% set name = ('locale.name.' ~ locale)|trans %}
+                <li>{% if locale == app.locale %}<span lang="{{ locale }}" aria-current="true">{{ name }}</span>{% else %}<a href="{{ path(route, route_params|merge({_locale: locale})) }}" hreflang="{{ locale }}" lang="{{ locale }}">{{ name }}</a>{% endif %}</li>
+                {% endfor %}
+            </ul>
+        </nav>
+        {% endif %}
         {% block body %}{% endblock %}
         <footer>
-            <p>We are an information and matching service. We do not provide veterinary advice, diagnosis, compatibility determinations, or transfusion services. All compatibility decisions and transfusions must be made by a licensed veterinarian.</p>
+            <p>{{ 'scope.banner'|trans }}</p>
         </footer>
     </body>
 </html>

@@ -1,0 +1,23 @@
+# The English source of `scope.banner` and `emergency.notice` lives in AGENTS.md and is the
+# authoritative wording; this is its Romanian rendering. "Matching service" is rendered as
+# "serviciu de informare și de punere în legătură" on purpose: the site connects owners, it never
+# asserts that one dog is suitable for another.
+#
+# `locale.name.*` is built at render time (`'locale.name.' ~ locale` in templates/base.html.twig),
+# so `debug:translation` reports those keys as unused. They are not — keep them when adding a
+# language.
+scope.banner: >-
+    Suntem un serviciu de informare și de punere în legătură. Nu oferim consultanță veterinară,
+    diagnostic, determinări de compatibilitate sau servicii de transfuzie. Toate deciziile privind
+    compatibilitatea și transfuziile trebuie să fie luate de un medic veterinar licențiat.
+emergency.notice: >-
+    Nu suntem un serviciu de urgență. Într-un caz acut, contactați acum medicul veterinar.
+locale.switcher: Limba
+locale.name.ro: Română
+locale.name.ru: Русский
+error.404.title: Pagina nu a fost găsită
+error.404.text: >-
+    Pagina cerută nu există sau a fost mutată. Verifică adresa sau întoarce-te la pagina principală.
+error.generic.title: Cererea nu a putut fi finalizată
+error.generic.text: Ceva nu a funcționat. Încearcă din nou în câteva momente.
+error.back_home: Înapoi la pagina principală

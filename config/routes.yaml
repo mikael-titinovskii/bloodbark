@@ -7,5 +7,14 @@
 # To list all registered routes, run the following command:
 #   bin/console debug:router
 
+# Every controller route is localised: Romanian, the default locale, is served without a prefix,
+# Russian under /ru. The generator registers one route per prefix, named app_home.ro / app_home.ru,
+# and the `_canonical_route` default ties them back to the route's own name — so templates generate
+# from `path('app_home')` and the router picks the locale. `trailing_slash_on_root` keeps the
+# Russian homepage at /ru instead of /ru/.
 controllers:
     resource: routing.controllers
+    trailing_slash_on_root: false
+    prefix:
+        ro: ''
+        ru: '/ru'

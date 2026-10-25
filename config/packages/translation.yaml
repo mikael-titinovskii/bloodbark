@@ -1,0 +1,8 @@
+# Romanian is the default and unprefixed locale; Russian is served under /ru. Both are required
+# of the site, so a language addition is an entry here plus translations/messages.<code>.yaml.
+framework:
+    default_locale: ro
+    enabled_locales: [ro, ru]
+    translator:
+        default_path: '%kernel.project_dir%/translations'
+        providers:

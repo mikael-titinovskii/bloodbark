@@ -1,5 +1,9 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        # framework.enabled_locales, so the language switcher and framework.enabled_locales cannot
+        # drift apart.
+        supported_locales: '%kernel.enabled_locales%'
 
 when@test:
     twig:

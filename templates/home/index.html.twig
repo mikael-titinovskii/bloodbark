@@ -5,6 +5,11 @@
         <h1>Bloodbark</h1>
     </header>
     <main>
-        <p>Not an emergency service. In an acute case, contact your veterinarian now.</p>
+        <p>{{ 'emergency.notice'|trans }}</p>
     </main>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script type="module" src="/assets/pages/home.js"></script>
 {% endblock %}
