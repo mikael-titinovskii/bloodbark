@@ -7,6 +7,7 @@
 #   make db-create    create the dev and test databases if they are missing
 #   make migrate      run pending Doctrine migrations
 #   make lint         php-cs-fixer, phpstan, eslint, container, yaml and twig linters
+#   make cs-fix       php-cs-fixer in write mode (what `make lint` checks, but applied)
 #   make unit         PHPUnit (phpunit.dist.xml), test database in the dev stack
 #   make assets       build the JS bundle into public/assets (vite)
 #   make npm CMD="install left-pad"   one npm command, in the node service
@@ -28,7 +29,7 @@ NODE := $(COMPOSE) run --rm --no-deps node
 EE := $(COMPOSE) -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml
 EE_PHP := $(EE) exec -T php
 
-.PHONY: up down db-create migrate lint unit assets assets-watch npm ee ee-up ee-down shell
+.PHONY: up down db-create migrate lint cs-fix unit assets assets-watch npm ee ee-up ee-down shell
 
 up:
 	$(COMPOSE) up -d --wait
@@ -50,6 +51,10 @@ lint:
 	$(PHP) php bin/console lint:container
 	$(PHP) php bin/console lint:yaml config/ translations/
 	$(PHP) php bin/console lint:twig templates/
+
+# Apply the php-cs-fixer fixes `make lint` only reports. Writes to the bind mount, so nothing to restart.
+cs-fix:
+	$(PHP) composer cs:fix
 
 unit:
 	$(PHP) php bin/phpunit
