@@ -1,0 +1,16 @@
+framework:
+    mailer:
+        # Every environment gets its DSN from MAILER_DSN: `.env` keeps the null transport (the safe
+        # default — nothing leaves the machine), `.env.dev` points it at the Mailpit catcher that
+        # compose.override.yaml runs on `make up`. A different sender — Mailtrap's sandbox, say —
+        # belongs in `.env.dev.local`, which loads after `.env.dev` and is git-ignored:
+        #   MAILER_DSN=smtp://USERNAME:PASSWORD@sandbox.smtp.mailtrap.io:2525
+        dsn: '%env(MAILER_DSN)%'
+
+when@test:
+    framework:
+        mailer:
+            # Pinned again, so a real DSN in `.env.test.local` cannot make `make unit` or `make ee`
+            # send mail. Tests still assert on what was sent: MailerAssertionsTrait reads the
+            # message logger, which records messages whatever transport is configured.
+            dsn: 'null://null'

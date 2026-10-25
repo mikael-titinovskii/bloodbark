@@ -68,8 +68,14 @@ cert — accept the warning), `make down` stops it. Inside the compose network t
   root mounted at `/home/docker/src`.
 - Certs are dev-only and git-ignored. Regenerate with
   `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout docker/nginx/certs/selfsigned.key -out docker/nginx/certs/selfsigned.crt -subj "/CN=localhost"`.
-- `node` is the fifth service, only for JS work. It carries the `tools` profile, so `make up` and `make ee-up` leave it
-  alone; `docker compose run --rm node …` enables the profile implicitly.
+- `node` is only for JS work. It carries the `tools` profile, so `make up` and `make ee-up` leave it alone;
+  `docker compose run --rm node …` enables the profile implicitly.
+- `mailer` is Mailpit, declared in `compose.override.yaml` so only the dev stack runs it: the inbox is
+  http://localhost:8025 and SMTP is `mailer:1025` on the compose network, which is what `.env.dev` puts in `MAILER_DSN`.
+  `.env` keeps `MAILER_DSN` on the null transport and `config/packages/mailer.yaml` pins it again under `when@test`, so
+  neither `make unit` nor `make ee` sends anything. A real sender — Mailtrap's sandbox, say
+  `smtp://USERNAME:PASSWORD@sandbox.smtp.mailtrap.io:2525` — goes in `.env.dev.local`, which is git-ignored and loads
+  after `.env.dev`. One test message: `make shell CMD="php bin/console mailer:test you@example.com"`.
 
 ## Front-end build
 

@@ -4,3 +4,15 @@ services:
     ports:
       - '5432:5432'
 ###< doctrine/doctrine-bundle ###
+
+###> symfony/mailer ###
+  # Mailpit catches everything the dev stack sends; the inbox is at http://localhost:8025.
+  # SMTP stays on the compose network (`mailer:1025`, which .env.dev points MAILER_DSN at), so the
+  # only published port is the web UI. The e2e stack does not load this file, and the test kernel
+  # pins the null transport, so no test ever reaches it.
+  mailer:
+    image: axllent/mailpit:v1.31
+    restart: unless-stopped
+    ports:
+      - '8025:8025'
+###< symfony/mailer ###
