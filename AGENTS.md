@@ -257,7 +257,10 @@ Database lifecycle is why `ee` is a single command:
   directories appear; exclude generated code (today only `tests/Support/_generated`). Don't lower the level or add
   inline ignores — use `--generate-baseline` if an upgrade ever needs it.
 - `composer check` — both, style first. `make lint` then also runs `npm run lint`, `lint:container`,
-  `lint:yaml config/ translations/` and `lint:twig templates/`.
+  `lint:yaml config/ translations/` and `lint:twig templates/`. It runs `codecept build` before phpstan for a reason: the
+  Cest files call methods that exist only on the actor traits written into `tests/Support/_generated`, so on a checkout
+  that never ran `make ee` phpstan reports all of them as undefined. That output stays git-ignored and excluded from both
+  phpstan and php-cs-fixer; regenerating it is harmless.
 
 A change isn't done while any of them is red. `make lint` and `make unit` set `XDEBUG_MODE=off` (otherwise every PHP
 process spends a second reaching for a debugger on port 9002); the raw form is

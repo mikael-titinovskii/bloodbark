@@ -47,8 +47,12 @@ db-create:
 migrate:
 	$(PHP) php bin/console doctrine:migrations:migrate --no-interaction
 
+# `codecept build` first: `tests/Support/*Tester.php` call methods that only exist on the actor
+# traits it generates, so phpstan reports every one of them as undefined until it has run. The output
+# is git-ignored and excluded from both phpstan and php-cs-fixer.
 lint:
 	$(PHP) composer cs:check
+	$(PHP) php vendor/bin/codecept build
 	$(PHP) composer phpstan
 	$(NODE) npm run lint
 	$(PHP) php bin/console lint:container
