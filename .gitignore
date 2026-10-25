@@ -36,3 +36,16 @@
 
 # Local-only agent instructions, loaded by Kimi Code but never committed.
 /.kimi-code/AGENTS.md
+
+# OS metadata — the checkout is reachable from Windows Explorer, and one visit to a
+# folder in thumbnail view drops Thumbs.db into the tree.
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Deliberately parked files. `Working safely` in AGENTS.md says move aside instead of
+# `rm -rf`; those paths must never be a candidate for `git add -A`.
+*.trash-*
+
+# PHPUnit coverage report.
+/coverage.xml
