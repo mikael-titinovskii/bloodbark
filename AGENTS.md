@@ -138,6 +138,11 @@ only as literal filter results, never as recommendations.
 - Pages are Twig templates under `templates/`, extending `templates/base.html.twig`; the controller
   renders them and holds no markup. `base.html.twig` carries the site-wide scope banner, so new pages get it
   for free and must not re-add their own copy of it.
+- Error pages extend it too: `templates/bundles/TwigBundle/Exception/error404.html.twig` and `error.html`
+  (the fallback for every other status) live in TwigBundle's namespace, so its renderer picks them up and a
+  404 carries the banner and the bundle. Twig only uses them when `debug` is off — the dev site and `make ee`
+  show the profiler exception page — so `tests/Controller/ErrorPageTest.php` boots a `debug: false` kernel to
+  check the real thing.
 - Before hand-writing infrastructure (locks, queues, caches, HTTP clients,
   mailers, schedulers) or reaching for a third-party library, check whether a
   Symfony component covers it. It usually does.
@@ -154,6 +159,26 @@ Three specifics worth spelling out, because they are easy to get wrong:
   can't extend a `readonly` class.
 - Use `symfony/lock` (`LockFactory`) for mutual exclusion. A hand-built flag or
   lock file looks fine in review and is usually wrong under concurrency.
+
+## Languages
+
+Romanian is the default locale and is served without a prefix; Russian is served under `/ru`.
+`framework.enabled_locales` in `config/packages/translation.yaml` is the single list of them —
+the language switcher reads it through the `supported_locales` Twig global, never a second copy.
+
+- Locale belongs in the URL, not the session. `config/routes.yaml` imports every controller route
+  once per locale, so `#[Route('/', name: 'app_home')]` becomes `app_home.ro` at `/` and
+  `app_home.ru` at `/ru`. A route written in a controller is localised automatically — never put a
+  locale prefix or parameter in a `#[Route]` path.
+- Generate URLs with the unsuffixed name: `path('app_home')` resolves to the current locale's
+  route. Pass `_locale` to address another one, as `base.html.twig` does for the switcher.
+- Every user-facing string goes through `|trans`, including the scope banner and emergency notice;
+  the only untranslated text in a template is the brand name. Copy lives in
+  `translations/messages.<locale>.yaml`, and no catalog may be left to fall back to English — the
+  required strings under Copy rules above are the English originals, and the RO/RU renderings are
+  what ships.
+- A new language is one entry in `enabled_locales`, a `messages.<code>.yaml`, and its endonym in
+  both catalogs under `locale.name.<code>`.
 
 ## Local stack (Docker)
 
@@ -188,6 +213,32 @@ run everything through the `php` service:
   `/home/docker/src`.
 - The certs are dev-only and git-ignored. Regenerate with
   `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout docker/nginx/certs/selfsigned.key -out docker/nginx/certs/selfsigned.crt -subj "/CN=localhost"`.
+- `node` is the fifth service, used only for JS work (below). It carries the `tools` profile, so `make up` and
+  `make ee-up` leave it alone; `docker compose run --rm node …` enables the profile implicitly.
+
+## Front-end build
+
+Plain Vite: no Symfony bundle, no Asset component, no manifest. Sources live in `assets/`, the build writes
+fixed filenames to `public/assets/`, and a Twig template links the file by name.
+
+- `make assets` runs `vite build`; `make assets-watch` rebuilds on every change. `make npm CMD="install
+  foo"` runs any npm command. All three shell into the `node` service — npm never runs on the host here,
+  because the checkout lives on the Windows-accessible path and npm cannot run lifecycle scripts over it.
+  `node_modules` sits on the bind mount and is ignored, like `vendor/`; the npm cache goes to `var/npm-cache`.
+- Entries are declared by hand in `vite.config.mjs`, keyed by output path: `app` → `/assets/app.js`,
+  `'pages/home'` → `/assets/pages/home.js`. To add one, drop a file under `assets/`, add it to `input`,
+  and reference it from a template.
+- `templates/home/index.html.twig` is the pattern for a page with its own entry: it calls `{{ parent() }}`
+  first, so the shared `app.js` stays, then adds its own script tag. Stylesheets imported from an entry
+  (`import '../styles/x.css'`) are emitted next to it as `<name>.css`; nothing uses that yet.
+- Filenames carry no content hash on purpose, so templates can name them and no manifest lookup is needed.
+  Nothing sets long cache headers for `/assets/`, so browsers revalidate rather than serve a stale bundle —
+  keep it that way unless hashing is introduced.
+- `public/assets/` holds build output only; Vite empties it on each build.
+- `npm run lint` (part of `make lint`) runs ESLint over `assets/` and the config files, using the
+  flat config in `eslint.config.js`: ESLint's own `recommended` rules plus browser globals, with
+  Node globals for the config files themselves. `vendor/`, `node_modules/`, `public/` and `var/` are
+  ignored. `make npm CMD="run lint -- --fix"` applies the fixes.
 
 ## Everyday workflow
 
@@ -303,8 +354,9 @@ only one of them is needed:
   code (today only `tests/Support/_generated`).
   Don't lower the level or add inline ignores to make a run pass; if a codebase-wide
   upgrade ever needs it, use `--generate-baseline`.
-- `composer check`: both, style first. `make lint` also runs `lint:container`,
-  `lint:yaml config/` and `lint:twig templates/` after those two.
+- `composer check`: both, style first. `make lint` also runs `npm run lint` (ESLint over `assets/`
+  and the config files, below), `lint:container`, `lint:yaml config/ translations/` and
+  `lint:twig templates/` after those two.
 
 A change isn't done while any of them is red. `make lint` and `make unit` already set
 `XDEBUG_MODE=off` (the compose stack otherwise spends a second per PHP process trying
