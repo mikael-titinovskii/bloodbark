@@ -1,0 +1,26 @@
+# Repository-level settings for the self-hosted PR-Agent that reviews pull requests here.
+# Model keys and the GitHub token stay on the review host — nothing secret belongs in this file.
+[config]
+model = "openrouter/deepseek/deepseek-chat"
+fallback_models = ["openrouter/deepseek/deepseek-chat"]
+
+[pr_reviewer]
+require_security_review = true
+require_tests_review = true
+require_estimate_effort_to_review = true
+num_max_findings = 5
+persistent_comment = true
+extra_instructions = """
+Symfony 8 / Doctrine ORM project — a matching platform for dog owners. Review against AGENTS.md:
+
+- Business rules, query building, transactions and persistence belong in a service, not a controller. A
+  controller binds request data, calls a service, returns a response.
+- Every user-facing string goes through `|trans`: Romanian is the default locale, Russian lives under /ru.
+  Hardcoded user-facing text is a finding, not a nit. The brand name is the only untranslated text.
+- The locale lives in the URL; a locale prefix or parameter inside a #[Route] path is wrong.
+- An entity change without a Doctrine migration is a blocker.
+- Pages are Twig templates extending base.html.twig, which already carries the site-wide scope banner; a new
+  page re-adding it is a finding.
+- Skip formatting and naming opinions — php-cs-fixer and the lint job own those. Report correctness, security,
+  i18n and missing test coverage.
+"""
