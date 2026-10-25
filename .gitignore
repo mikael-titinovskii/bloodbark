@@ -8,3 +8,6 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+# Local development only — regenerate with `make certs`-style openssl call.
+/docker/nginx/certs/

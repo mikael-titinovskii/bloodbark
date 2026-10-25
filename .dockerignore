@@ -1,0 +1,9 @@
+**/*.log
+**/.idea
+**/.git/
+**/.gitignore
+**/.DS_Store
+compose.yaml
+docker/nginx/certs/
+vendor/
+var/

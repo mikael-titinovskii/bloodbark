@@ -147,6 +147,20 @@ Three specifics worth spelling out, because they are easy to get wrong:
 - Use `symfony/lock` (`LockFactory`) for mutual exclusion. A hand-built flag or
   lock file looks fine in review and is usually wrong under concurrency.
 
+## Local stack (Docker)
+
+PHP-FPM, nginx and the TLS certs live in `docker/` and are wired up by `compose.yaml`. There is no PHP on the host, so
+run everything through the `php` service:
+
+- `docker compose up -d` — site at https://127.0.0.1:8000 (HTTPS only, self-signed cert: accept the warning).
+  `docker compose down` stops it.
+- `docker compose exec php php bin/console …`, `docker compose exec php composer …`.
+- Logs: `docker compose logs -f php nginx`.
+- Xdebug listens for the IDE on port 9002; `PHP_IDE_CONFIG=serverName=bloodbark`, project root mounted at
+  `/home/docker/src`.
+- The certs are dev-only and git-ignored. Regenerate with
+  `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout docker/nginx/certs/selfsigned.key -out docker/nginx/certs/selfsigned.crt -subj "/CN=localhost"`.
+
 ## Everyday workflow
 
 - When something fails, read `var/log/dev.log` and the web profiler (`/_profiler`) before changing code.
