@@ -1,0 +1,7 @@
+parameters:
+    level: 8
+    paths:
+        - src
+    checkUninitializedProperties: true
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml

@@ -126,6 +126,11 @@ only as literal filter results, never as recommendations.
   of several implementations of an interface). A YAML service definition is the
   last resort, not the first.
 - Controllers extend `AbstractController`, stay thin, and delegate to services.
+  Put logic in services — business rules, query building, transactions,
+  persistence, orchestration — and never grow it inside a controller. A bloated
+  controller is a defect, not a style preference: an action should only bind
+  request data, call a service, and return a response. If an action is growing
+  past that, extract the missing service instead of adding another branch.
 - Use the framework for what it already does: Form for server-rendered forms,
   Validator for validation, Serializer for JSON, Messenger for async work,
   Security (voters, authenticators) for access control, Twig `path()`/`url()`
@@ -152,9 +157,10 @@ Three specifics worth spelling out, because they are easy to get wrong:
 PHP-FPM, nginx and the TLS certs live in `docker/` and are wired up by `compose.yaml`. There is no PHP on the host, so
 run everything through the `php` service:
 
-- `docker compose up -d` — site at https://127.0.0.1:8000 (HTTPS only, self-signed cert: accept the warning).
-  `docker compose down` stops it.
-- `docker compose exec php php bin/console …`, `docker compose exec php composer …`.
+- `make up` — site at https://127.0.0.1:8000 (HTTPS only, self-signed cert: accept the warning).
+  `make down` stops it. Both wrap `docker compose up -d` / `docker compose down`.
+- `make ee CMD="php bin/console …"` runs one command in the `php` container; bare `make ee` opens a shell in it
+  (the image is Alpine, so `sh`, not bash). `bin/*` is not executable on the bind mount — always prefix with `php`.
 - Logs: `docker compose logs -f php nginx`.
 - Xdebug listens for the IDE on port 9002; `PHP_IDE_CONFIG=serverName=bloodbark`, project root mounted at
   `/home/docker/src`.
@@ -177,17 +183,36 @@ run everything through the `php` service:
 
 ## Testing
 
-Install `symfony/test-pack` if it isn't already. Functional/HTTP tests extend
-`WebTestCase`; service-level tests extend `KernelTestCase`. Run
-`php bin/phpunit` (falls back to `vendor/bin/phpunit`). A feature isn't done
+`symfony/test-pack` is installed: PHPUnit 13 with `phpunit.dist.xml`, bootstrapped by
+`tests/bootstrap.php` in the `test` environment. Functional/HTTP tests extend
+`WebTestCase`; service-level tests extend `KernelTestCase`. Run `make unit` (it calls
+`php bin/phpunit`). A feature isn't done
 until it has a test that exercises it the way a caller would, an HTTP request for
 a controller or a service call for a service, not just "it didn't throw."
 
-## Code style
+## Checks: style and static analysis
 
-Symfony's coding standard, the `@Symfony` php-cs-fixer ruleset (a PSR-12-derived
-superset). Run `vendor/bin/php-cs-fixer fix` if `friendsofphp/php-cs-fixer` is
-installed; it isn't part of the skeleton by default.
+`make lint` runs everything below; the individual composer scripts are there when
+only one of them is needed:
+
+- `composer cs:check`: php-cs-fixer dry run with a diff; `composer cs:fix` writes
+  the fixes. The `@Symfony` ruleset (PSR-12-derived superset) is configured in
+  `.php-cs-fixer.dist.php`. It only scans `*.php`, so `bin/console` is not checked.
+- `composer phpstan`: PHPStan at level 8 over `src/`, configured in
+  `phpstan.dist.neon`, with `phpstan/phpstan-strict-rules` and
+  `checkUninitializedProperties` on. The Symfony extension (`phpstan/phpstan-symfony`,
+  loaded by `phpstan/extension-installer`) resolves services from
+  `var/cache/dev/App_KernelDevDebugContainer.xml`, so warm the dev cache first if
+  that file is missing. Widen `paths` as directories appear — `tests` once it exists.
+  Don't lower the level or add inline ignores to make a run pass; if a codebase-wide
+  upgrade ever needs it, use `--generate-baseline`.
+- `composer check`: both, style first. `make lint` also runs `lint:container` and
+  `lint:yaml config/` after those two.
+
+A change isn't done while any of them is red. `make lint` and `make unit` already set
+`XDEBUG_MODE=off` (the compose stack otherwise spends a second per PHP process trying
+to reach a debugger on port 9002); the raw form is
+`docker compose exec -T -e XDEBUG_MODE=off php composer check`.
 
 ## Discover, don't guess
 
