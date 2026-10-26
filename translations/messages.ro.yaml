@@ -149,3 +149,24 @@ contact.window.no_preference: Fără preferință
 contact.window.morning: Dimineața
 contact.window.midday: La amiază
 contact.window.evening: Seara
+
+# --- Backoffice ----------------------------------------------------------------------------
+# The account labels above are reused here on purpose: the backoffice shows the same fields, so a
+# wording change stays a single edit. EasyAdmin's own interface strings come from the bundle's
+# catalogs, which already ship `ro` and `ru`.
+admin.menu.moderation: Moderare
+admin.menu.users: Utilizatori
+admin.user.singular: Utilizator
+admin.user.plural: Utilizatori
+admin.user.id: ID
+admin.user.email.help: >-
+    Adresa este identificatorul de autentificare și rămâne neschimbată. Contul se creează doar prin
+    înregistrare.
+admin.user.roles: Roluri
+admin.user.consent_at: Consimțământ la
+admin.user.consent_policy_version: Versiunea politicii
+admin.user.adult_confirmed_at: Majorat confirmat la
+admin.user.confirmed_at: Adresă confirmată la
+admin.user.created_at: Înregistrat la
+admin.role.moderator: Moderator
+admin.role.super_admin: Super administrator

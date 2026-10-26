@@ -150,3 +150,23 @@ contact.window.no_preference: Без предпочтений
 contact.window.morning: Утро
 contact.window.midday: Полдень
 contact.window.evening: Вечер
+
+# --- Backoffice ----------------------------------------------------------------------------
+# The account labels above are reused here on purpose: the backoffice shows the same fields, so a
+# wording change stays a single edit. EasyAdmin's own interface strings come from the bundle's
+# catalogs, which already ship `ro` and `ru`.
+admin.menu.moderation: Модерация
+admin.menu.users: Пользователи
+admin.user.singular: Пользователь
+admin.user.plural: Пользователи
+admin.user.id: ID
+admin.user.email.help: >-
+    Адрес — это идентификатор для входа, он не меняется. Аккаунт создаётся только регистрацией.
+admin.user.roles: Роли
+admin.user.consent_at: Согласие получено
+admin.user.consent_policy_version: Версия политики
+admin.user.adult_confirmed_at: Совершеннолетие подтверждено
+admin.user.confirmed_at: Адрес подтверждён
+admin.user.created_at: Зарегистрирован
+admin.role.moderator: Модератор
+admin.role.super_admin: Супер-администратор

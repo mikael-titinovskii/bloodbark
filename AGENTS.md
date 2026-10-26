@@ -43,7 +43,8 @@ global.
 
 - Locale lives in the URL, not the session: `config/routes.yaml` imports every controller route once per locale, so
   `app_home` exists as `app_home.ro` at `/` and `app_home.ru` at `/ru`. Never put a locale prefix or parameter in a
-  `#[Route]` path.
+  `#[Route]` path. The backoffice is the one exception and does it explicitly — `/{_locale}/admin` — because EasyAdmin's
+  language switcher works by rewriting that route parameter; see the Backoffice section.
 - Generate URLs with the unsuffixed name — `path('app_home')` follows the current locale. Pass `_locale` to address
   another one, as the switcher in `base.html.twig` does.
 - Every user-facing string goes through `|trans`; the brand name is the only untranslated text in a template. Catalogs
@@ -76,9 +77,10 @@ a new one.
   is the framework-generated `_logout_main` route, posted with the `logout` token. `App\Security\UserProvider` replaces
   the entity provider, because a login form hands back whatever casing the visitor typed while addresses are stored
   lowercased.
-- Every account is a `ROLE_USER`. `ROLE_MODERATOR` and `ROLE_SUPER_ADMIN` live in the same JSON column and — until an
-  admin screen exists — are granted from the console: `php bin/console app:user:promote <email> moderator|super_admin`.
-  The hierarchy in `security.yaml` makes them cumulative: super admin ⊃ moderator ⊃ user.
+- Every account is a `ROLE_USER`. `ROLE_MODERATOR` and `ROLE_SUPER_ADMIN` live in the same JSON column and are granted
+  from the console: `php bin/console app:user:promote <email> moderator|super_admin`. The hierarchy in `security.yaml`
+  makes them cumulative: super admin ⊃ moderator ⊃ user. The backoffice lists roles but does not edit them — `User`
+  exposes `addRole()` and no setter on purpose, so a form cannot replace the whole column in one POST.
 - The one exception is the address in `SUPERADMIN_EMAIL` (an env var, unset by default: set it in `.env.local` or the
   deployment environment). When that address registers, it stays a plain user until it follows the confirmation link —
   then `App\Service\EmailConfirmationService` grants `ROLE_SUPER_ADMIN`. The role hangs off confirmation, not off the
@@ -88,7 +90,8 @@ a new one.
   "send it again" on the account page (`POST /account/confirmation`). A confirmed address is not required to sign in, so
   an expired link is an inconvenience rather than a lockout.
 - `access_control` matches local paths by regex (`^/(ru/)?account`), since every controller route exists once per
-  locale. New protected areas follow the same shape.
+  locale. New protected areas follow the same shape — the backoffice matches `^/(ro|ru)/admin`, because its locale
+  segment is mandatory rather than optional (see below).
 - `PasswordResetRequest` (`app_password_reset_request`) keeps only the SHA-256 of a link token, one live row per account,
   valid for `PasswordResetService::TTL_HOURS`. `POST /forgot-password` answers the same sentence for a known and an
   unknown address (the form must not enumerate accounts), and `GET /reset-password/{token}` only renders the form — the
@@ -102,6 +105,44 @@ a new one.
   The counters live in the `cache.rate_limiter` pool, which `cache:clear` does *not* empty — to unstick a dev browser
   that has spent its five, run `php bin/console cache:pool:clear cache.rate_limiter` (`ee-up` does it for the e2e
   stack).
+
+### Backoffice
+
+`/{_locale}/admin` is EasyAdmin 5 (`easycorp/easyadmin-bundle`, MIT, PHP 8.2+/Symfony 6.4–8.x). It is an internal tool
+and does not share the public design: EasyAdmin ships Bootstrap 5 and FontAwesome, the rest of the site stays Twig +
+Tailwind.
+
+- `App\Controller\Admin\DashboardController` carries
+  `#[AdminDashboard(routePath: '/{_locale}/admin', routeName: 'app_admin')]`; its `index()` redirects straight to the
+  account list, which is the only thing a super admin comes here to do. `App\Controller\Admin\UserCrudController` is the
+  only CRUD controller so far.
+- The locale is a mandatory path segment here — `/ro/admin/user`, `/ru/admin/user` — unlike the rest of the site, where
+  Romanian is unprefixed. That is the price of a working language switcher: EasyAdmin rewrites the `_locale` route
+  parameter, so the route has to carry one. `configureDashboard()` feeds the switcher from
+  `%kernel.enabled_locales%`; the route's `requirements` mirror that list in a constant, because attribute arguments
+  cannot read parameters.
+- Bare `/admin` still works: `App\EventListener\AdminLandingRedirect` answers it before routing with a 302 to the
+  default locale. `access_control` matches `^/(ro|ru)/admin`.
+- Routes come from EasyAdmin's own loader (`config/routes/easyadmin.yaml`, `type: easyadmin.routes`), not from
+  `config/routes.yaml`. The attribute creates the dashboard route; `app_admin_user_index`, `app_admin_user_edit`, … are
+  generated from its path, locale placeholder included.
+- `new` is disabled in `configureActions()` *and* refused in the controller: `Action::NEW` off only hides the button,
+  EasyAdmin serves the route regardless, and an account that appears without a password nobody received is worse than
+  no account. Everything else about an account comes from registration and confirmation.
+- Properties with no setter (`roles`, `consentAt`, `confirmedAt`, `createdAt`) are hidden from the form, and the email is
+  a disabled input — it is the login identifier and the confirmation record hangs off it.
+- Field and menu labels are message keys (`Field::new('email', t('account.email'))`); EasyAdmin translates them in the
+  `messages` domain, which is why `admin.*` lives in both catalogs. A label with no key renders as the raw key.
+- `assets:install` (in composer's auto-scripts) publishes the bundle to `public/bundles/easyadmin`, which is git-ignored:
+  a checkout that never ran `composer install` serves an unstyled backoffice.
+- `tests/Controller/AdminTest.php` covers the three refusals (anonymous, plain user, moderator) and the account list for
+  a super admin.
+- `src/DataFixtures/SuperAdminFixtures.php` seeds `superadmin@bloodbark.test` with the password in its `PASSWORD`
+  constant — a confirmed super admin, so `/admin` is reachable without registering, digging the generated password out
+  of Mailpit and promoting yourself. Load it with `doctrine:fixtures:load --append`: without `--append` the command
+  purges the dev database first. The fixture is a no-op when the row already exists. It never reaches production, since
+  `DoctrineFixturesBundle` is registered for `dev` and `test` only; the e2e database gets the same account, which is what
+  an admin acceptance test would sign in with.
 
 ## Local stack (Docker)
 

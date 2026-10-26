@@ -1,9 +1,9 @@
-# Sign-up mails a generated password; there is no self-chosen one, and no password reset flow yet.
+# Sign-up mails a generated password; self-chosen passwords come only from the reset flow.
 #
-# Roles: every account is a ROLE_USER. ROLE_MODERATOR is granted by a super admin (or by
-# `app:user:promote`) and unlocks the moderator sections; ROLE_SUPER_ADMIN is the admin backoffice
-# and the role needed to hand out moderator. The hierarchy only decides which pages open, never
-# what a listing says.
+# Roles: every account is a ROLE_USER. ROLE_MODERATOR and ROLE_SUPER_ADMIN are granted with
+# `php bin/console app:user:promote` — the backoffice lists roles but does not edit them, because
+# `User` exposes `addRole()` and no setter. No page requires ROLE_MODERATOR yet; ROLE_SUPER_ADMIN is
+# what opens /admin. The hierarchy only decides which pages open, never what a listing says.
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
@@ -51,6 +51,9 @@ security:
     # Note: Only the *first* matching rule is applied; everything not listed is public.
     # The optional `ru/` segment is the locale prefix of the same route (see config/routes.yaml).
     access_control:
+        # The backoffice is EasyAdmin's own route loader (`config/routes/easyadmin.yaml`), so it is
+        # the one part of the site whose locale is a mandatory path segment: `/ro/admin`, `/ru/admin`.
+        - { path: '^/(ro|ru)/admin', roles: ROLE_SUPER_ADMIN }
         - { path: '^/(ru/)?account', roles: ROLE_USER }
 
 when@test:
