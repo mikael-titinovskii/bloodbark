@@ -73,5 +73,10 @@ final class DashboardController extends AbstractDashboardController
         yield MenuItem::section(t('admin.menu.moderation'));
         // EasyAdmin 5 names this `linkTo()`; 4.x's `linkToCrud()` is gone.
         yield MenuItem::linkTo(UserCrudController::class, t('admin.menu.users'), 'internal:user');
+
+        yield MenuItem::section(t('admin.menu.analytics'));
+        yield MenuItem::linkToRoute(t('admin.menu.analytics_overview'), 'fa fa-chart-line', 'app_admin_analytics_overview');
+        yield MenuItem::linkTo(AnalyticsEventCrudController::class, t('admin.menu.analytics_events'), 'fa fa-list');
+        yield MenuItem::linkTo(AnalyticsConsentCrudController::class, t('admin.menu.analytics_consents'), 'fa fa-lock');
     }
 }

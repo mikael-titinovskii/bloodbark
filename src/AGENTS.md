@@ -46,3 +46,25 @@ The reset flow is the only exception to "we choose the password" — a one-time 
   (`login_throttling`: 5 attempts per 15 minutes per account+IP, reset by a successful sign-in). Counters live in the
   `cache.rate_limiter` pool, which `cache:clear` does *not* empty — unstick a spent dev browser with
   `php bin/console cache:pool:clear cache.rate_limiter` (`ee-up` does it for the e2e stack).
+
+## Analytics and cookie consent
+
+- Analytics is opt-in and native. `vanilla-cookieconsent` owns the `bb_consent` browser cookie and left-side UI;
+  `AnalyticsConsentService` also requires a matching server-side `analytics_consent` row at the current
+  `app.analytics.consent_revision` before `AnalyticsRecorder` writes anything. Bump that parameter when the analytics
+  purposes or collected data change. Withdrawing consent deletes the browser's previous events and blocks later writes
+  while retaining the audit row; the separate EasyAdmin `forget` action also removes that row on manual request.
+  Consent changes and event inserts share a PostgreSQL advisory transaction lock, so withdrawal cannot race an event
+  into existence and simultaneous first choices cannot violate the consent UUID unique index.
+- `app.analytics.retention_days` (182) controls the browser cookie, backend consent expiry and data retention. Run
+  `php bin/console app:analytics:purge` daily in production: it removes older events and expired consent rows without
+  events, taking the same per-consent locks before cleanup. `AnalyticsRequestGuard` throttles both public endpoints
+  before payload mapping and rejects bodies over 8 KB, so malformed JSON cannot bypass the limiter.
+- The consent row and its events use the library's random UUID, never the account, email or IP. Event properties are
+  scalar-only, size-limited and restricted to `locale`, `route` and `value`; never put contact details, free text,
+  medical data or exact location in them. `page_view` sends the canonical route name and locale, never the raw path,
+  query string or route parameters (which can contain secret tokens). Successful registration records
+  `registration_completed` through the same consent gate.
+- Localized `POST /analytics/consent` and `POST /analytics/events` use `#[MapRequestPayload]`. The former is necessary
+  to save the choice; the latter returns 204 without storing when consent is absent. Their public-ingestion rate limits
+  live beside the mail limits in `framework.rate_limiter` and `RequestThrottle`.

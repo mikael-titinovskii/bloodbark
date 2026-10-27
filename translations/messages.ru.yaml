@@ -170,3 +170,56 @@ admin.user.confirmed_at: Адрес подтверждён
 admin.user.created_at: Зарегистрирован
 admin.role.moderator: Модератор
 admin.role.super_admin: Супер-администратор
+
+# --- Cookie и статистика ----------------------------------------------------------------------
+consent.modal.title: Cookie и статистика использования
+consent.modal.description: >-
+    Мы используем необходимые cookie для работы сайта. С вашего согласия мы также собираем
+    статистику посещённых страниц и действий. Отказ не ограничивает функции сайта.
+consent.accept_analytics: Разрешить статистику
+consent.necessary_only: Только необходимые
+consent.customize: Настроить
+consent.preferences.title: Настройки cookie
+consent.save: Сохранить настройки
+consent.close: Закрыть настройки
+consent.preferences.intro.title: Ваш выбор
+consent.preferences.intro.description: >-
+    Вы можете изменить выбор в любой момент в нижней части страницы. Отключение статистики
+    прекращает сбор и удаляет события, связанные с этим браузером.
+consent.necessary.title: Строго необходимые cookie
+consent.necessary.description: >-
+    Они нужны для входа, безопасности и сохранения ваших настроек cookie. Их нельзя отключить.
+consent.analytics.title: Статистика использования
+consent.analytics.description: >-
+    Она помогает понять, какие функции используются. Мы храним действие, дату, язык и страницу
+    со случайным идентификатором не более 182 дней. Медицинские и контактные данные не собираются.
+consent.manage: Настройки cookie
+
+admin.menu.analytics: Статистика
+admin.menu.analytics_overview: Обзор
+admin.menu.analytics_events: События
+admin.analytics.overview.title: Статистика использования
+admin.analytics.overview.period: События по дням начиная с %date%.
+admin.analytics.overview.total_events: Всего событий
+admin.analytics.overview.unique_consents: Идентификаторы согласия с событиями
+admin.analytics.overview.by_name: События по названию
+admin.analytics.overview.daily: Ежедневный итог
+admin.analytics.overview.count: Количество
+admin.analytics.overview.date: Дата
+admin.analytics.overview.empty: За этот период событий нет.
+admin.analytics.event.singular: Событие
+admin.analytics.event.plural: События
+admin.analytics.event.id: ID
+admin.analytics.event.name: Название
+admin.analytics.event.occurred_at: Зарегистрировано
+admin.analytics.event.properties: Свойства
+admin.menu.analytics_consents: Согласия на статистику
+admin.analytics.consent.singular: Согласие
+admin.analytics.consent.plural: Согласия на статистику
+admin.analytics.consent.id: Идентификатор согласия
+admin.analytics.consent.allowed: Статистика разрешена
+admin.analytics.consent.revision: Ревизия
+admin.analytics.consent.created_at: Создано
+admin.analytics.consent.updated_at: Обновлено
+admin.analytics.consent.forget: Забыть посетителя
+admin.analytics.consent.forgotten: Согласие и все связанные события удалены.

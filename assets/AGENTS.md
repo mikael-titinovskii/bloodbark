@@ -10,6 +10,11 @@ in `public/assets/`, templates link by name.
 - Entries are declared by hand in `vite.config.mjs`, keyed by output path: `app` → `/assets/app.js`, `'pages/home'` →
   `/assets/pages/home.js`. To add one, drop a file under `assets/`, add it to `input`, reference it from a template.
   `templates/home/index.html.twig` is the pattern — it calls `{{ parent() }}` first so the shared `app.js` stays.
+- The shared entry also imports `assets/analytics.js` and the local `vanilla-cookieconsent` styles. That module reads
+  `templates/analytics/_config.html.twig`, renders the bottom-left consent box and left preferences panel, saves choices
+  before tracking, sends consented `page_view` events, and delegates clicks marked with `data-analytics-event` (optional
+  `data-analytics-value`). Page views send only the canonical route name and locale, never paths, query strings or
+  route parameters; server-side consent checks and the event-property allowlist remain authoritative.
 - Tailwind CSS v4 is wired in through `@tailwindcss/vite` (a plugin in `vite.config.mjs`), not a PostCSS config. The
   stylesheet is `assets/styles/app.css`, imported by the shared `assets/app.js` entry and built to `/assets/app.css`,
   which `templates/base.html.twig` links from its `stylesheets` block — Vite emits CSS as a separate asset, it is not

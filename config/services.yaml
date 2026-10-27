@@ -12,6 +12,12 @@ parameters:
     # what a user agreed to only means something if the number moves with the document.
     app.legal.policy_version: '1.0'
 
+    # Changing the analytics purposes or data collected invalidates old choices and displays the
+    # consent dialog again. The browser configuration and server-side checks both read this value.
+    app.analytics.consent_revision: 1
+    # Browser consent, server-side acceptance and scheduled deletion share the same retention window.
+    app.analytics.retention_days: 182
+
     # Sender of the transactional mail. `no-reply@bloodbark.md` is a placeholder: set the real
     # address before launch, here or with MAILER_SENDER in `.env.local`.
     app.mailer.sender_address: 'no-reply@bloodbark.md'

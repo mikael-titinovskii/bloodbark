@@ -1,0 +1,45 @@
+{% set consent_translations = {} %}
+{% for locale in supported_locales %}
+    {% set consent_translations = consent_translations|merge({
+        (locale): {
+            consentModal: {
+                title: 'consent.modal.title'|trans({}, 'messages', locale),
+                description: 'consent.modal.description'|trans({}, 'messages', locale),
+                acceptAllBtn: 'consent.accept_analytics'|trans({}, 'messages', locale),
+                acceptNecessaryBtn: 'consent.necessary_only'|trans({}, 'messages', locale),
+                showPreferencesBtn: 'consent.customize'|trans({}, 'messages', locale),
+            },
+            preferencesModal: {
+                title: 'consent.preferences.title'|trans({}, 'messages', locale),
+                acceptAllBtn: 'consent.accept_analytics'|trans({}, 'messages', locale),
+                acceptNecessaryBtn: 'consent.necessary_only'|trans({}, 'messages', locale),
+                savePreferencesBtn: 'consent.save'|trans({}, 'messages', locale),
+                closeIconLabel: 'consent.close'|trans({}, 'messages', locale),
+                sections: [
+                    {
+                        title: 'consent.preferences.intro.title'|trans({}, 'messages', locale),
+                        description: 'consent.preferences.intro.description'|trans({}, 'messages', locale),
+                    },
+                    {
+                        title: 'consent.necessary.title'|trans({}, 'messages', locale),
+                        description: 'consent.necessary.description'|trans({}, 'messages', locale),
+                        linkedCategory: 'necessary',
+                    },
+                    {
+                        title: 'consent.analytics.title'|trans({}, 'messages', locale),
+                        description: 'consent.analytics.description'|trans({}, 'messages', locale),
+                        linkedCategory: 'analytics',
+                    },
+                ],
+            },
+        },
+    }) %}
+{% endfor %}
+<script id="analytics-config" type="application/json">{{ {
+    consentEndpoint: path('app_analytics_consent'),
+    eventEndpoint: path('app_analytics_event'),
+    revision: analytics_consent_revision,
+    retentionDays: analytics_retention_days,
+    route: app.request.attributes.get('_canonical_route', app.request.attributes.get('_route')),
+    translations: consent_translations,
+}|json_encode(constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP') b-or constant('JSON_HEX_APOS') b-or constant('JSON_HEX_QUOT'))|raw }}</script>

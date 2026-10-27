@@ -5,8 +5,12 @@ design: EasyAdmin ships Bootstrap 5 and FontAwesome, the rest of the site stays 
 
 - `App\Controller\Admin\DashboardController` carries
   `#[AdminDashboard(routePath: '/{_locale}/admin', routeName: 'app_admin')]`; its `index()` redirects straight to the
-  account list, which is the only thing a super admin comes here to do. `App\Controller\Admin\UserCrudController` is the
-  only CRUD controller so far.
+  account list. `UserCrudController` manages accounts; `AnalyticsEventCrudController` is deliberately read-only and
+  refuses mutation routes as well as hiding their actions. `AnalyticsConsentCrudController` lists random consent IDs
+  and offers the POST-only, CSRF-protected `forget` action, which removes the consent record and every associated event.
+- `AnalyticsOverviewController` is a custom `#[AdminRoute]` at `/{_locale}/admin/analytics`. Its template extends
+  EasyAdmin's content page, while totals and 30-day aggregates come from `AnalyticsEventRepository`. The dashboard
+  links to that overview and the event browser under the translated analytics section.
 - The locale is a mandatory path segment here (`/ro/admin/user`, `/ru/admin/user`), unlike the rest of the site where
   Romanian is unprefixed — the price of a working language switcher: EasyAdmin rewrites the `_locale` route parameter,
   so the route must carry one. `configureDashboard()` feeds the switcher from `%kernel.enabled_locales%`; the route's

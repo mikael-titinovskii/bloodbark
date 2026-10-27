@@ -8,7 +8,7 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 
 /**
- * One hit per request on the flows that cost something — mail, mostly.
+ * One hit per request on mail flows and the public analytics ingestion endpoints.
  *
  * The key is the client IP rather than the account: the point is to stop a loop, and a loop does
  * not care whose address it types. The limits themselves live in `framework.rate_limiter`, so this
@@ -21,6 +21,8 @@ final readonly class RequestThrottle
         #[Autowire(service: 'limiter.registration')] private RateLimiterFactory $registration,
         #[Autowire(service: 'limiter.password_reset')] private RateLimiterFactory $passwordReset,
         #[Autowire(service: 'limiter.email_confirmation')] private RateLimiterFactory $emailConfirmation,
+        #[Autowire(service: 'limiter.analytics_consent')] private RateLimiterFactory $analyticsConsent,
+        #[Autowire(service: 'limiter.analytics_event')] private RateLimiterFactory $analyticsEvent,
     ) {
     }
 
@@ -37,6 +39,16 @@ final readonly class RequestThrottle
     public function confirmation(Request $request): void
     {
         $this->consume($this->emailConfirmation, $request);
+    }
+
+    public function analyticsConsent(Request $request): void
+    {
+        $this->consume($this->analyticsConsent, $request);
+    }
+
+    public function analyticsEvent(Request $request): void
+    {
+        $this->consume($this->analyticsEvent, $request);
     }
 
     private function consume(RateLimiterFactory $factory, Request $request): void

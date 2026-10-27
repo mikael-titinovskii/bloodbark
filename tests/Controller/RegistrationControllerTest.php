@@ -94,6 +94,34 @@ final class RegistrationControllerTest extends WebTestCase
         self::assertSelectorTextContains('main', $email);
     }
 
+    public function testSuccessfulRegistrationIsRecordedWithAnalyticsConsent(): void
+    {
+        $client = self::createClient();
+        $consentId = sprintf('00000000-0000-4000-a000-%012s', bin2hex(random_bytes(6)));
+        $client->request('POST', '/analytics/consent', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
+            'consentId' => $consentId,
+            'analyticsAllowed' => true,
+            'revision' => 1,
+        ], JSON_THROW_ON_ERROR));
+        $client->getCookieJar()->set(new \Symfony\Component\BrowserKit\Cookie('bb_consent', json_encode([
+            'consentId' => $consentId,
+            'categories' => ['necessary', 'analytics'],
+            'revision' => 1,
+        ], JSON_THROW_ON_ERROR)));
+
+        $client->submit($this->registrationForm($client, self::uniqueEmail(), 'Ion Popescu'));
+
+        self::assertResponseRedirects('/register/sent');
+        $consent = self::getContainer()->get(\App\Repository\AnalyticsConsentRepository::class)->findOneByConsentId($consentId);
+        self::assertNotNull($consent);
+        $event = self::getContainer()->get(\App\Repository\AnalyticsEventRepository::class)->findOneBy([
+            'name' => 'registration_completed',
+            'consent' => $consent,
+        ]);
+        self::assertNotNull($event);
+        self::assertSame(['locale' => 'ro'], $event->getProperties());
+    }
+
     public function testTheMailedPasswordSignsIn(): void
     {
         $client = self::createClient();

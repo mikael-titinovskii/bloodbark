@@ -170,3 +170,57 @@ admin.user.confirmed_at: Adresă confirmată la
 admin.user.created_at: Înregistrat la
 admin.role.moderator: Moderator
 admin.role.super_admin: Super administrator
+
+# --- Cookie și statistici ---------------------------------------------------------------------
+consent.modal.title: Cookie-uri și statistici de utilizare
+consent.modal.description: >-
+    Folosim cookie-uri necesare pentru funcționarea site-ului. Cu acordul tău, colectăm și
+    statistici despre paginile vizitate și acțiunile efectuate. Poți refuza fără a pierde funcții.
+consent.accept_analytics: Accept statistici
+consent.necessary_only: Doar cookie-uri necesare
+consent.customize: Alege preferințele
+consent.preferences.title: Preferințe cookie
+consent.save: Salvează preferințele
+consent.close: Închide preferințele
+consent.preferences.intro.title: Alegerea ta
+consent.preferences.intro.description: >-
+    Poți schimba alegerea oricând din subsolul paginii. Dezactivarea statisticilor oprește
+    colectarea și șterge evenimentele asociate acestui browser.
+consent.necessary.title: Cookie-uri strict necesare
+consent.necessary.description: >-
+    Sunt necesare pentru autentificare, securitate și reținerea preferințelor tale cookie.
+    Nu pot fi dezactivate.
+consent.analytics.title: Statistici de utilizare
+consent.analytics.description: >-
+    Ne ajută să înțelegem ce funcții sunt folosite. Păstrăm maximum 182 de zile numele acțiunii, data,
+    limba și pagina, asociate unui identificator aleatoriu. Nu colectăm conținut medical sau date de contact.
+consent.manage: Preferințe cookie
+
+admin.menu.analytics: Statistici
+admin.menu.analytics_overview: Prezentare generală
+admin.menu.analytics_events: Evenimente
+admin.analytics.overview.title: Statistici de utilizare
+admin.analytics.overview.period: Evenimente pe zile începând cu %date%.
+admin.analytics.overview.total_events: Total evenimente
+admin.analytics.overview.unique_consents: Identificatori de consimțământ cu evenimente
+admin.analytics.overview.by_name: Evenimente după nume
+admin.analytics.overview.daily: Total zilnic
+admin.analytics.overview.count: Număr
+admin.analytics.overview.date: Data
+admin.analytics.overview.empty: Nu există evenimente în această perioadă.
+admin.analytics.event.singular: Eveniment
+admin.analytics.event.plural: Evenimente
+admin.analytics.event.id: ID
+admin.analytics.event.name: Nume
+admin.analytics.event.occurred_at: Înregistrat la
+admin.analytics.event.properties: Proprietăți
+admin.menu.analytics_consents: Consimțământuri statistici
+admin.analytics.consent.singular: Consimțământ
+admin.analytics.consent.plural: Consimțământuri statistici
+admin.analytics.consent.id: Identificator consimțământ
+admin.analytics.consent.allowed: Statistici permise
+admin.analytics.consent.revision: Revizuire
+admin.analytics.consent.created_at: Creat la
+admin.analytics.consent.updated_at: Actualizat la
+admin.analytics.consent.forget: Uită vizitatorul
+admin.analytics.consent.forgotten: Consimțământul și toate evenimentele asociate au fost șterse.

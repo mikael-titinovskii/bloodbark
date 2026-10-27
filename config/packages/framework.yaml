@@ -5,9 +5,8 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
-    # Two endpoints send mail, so an unthrottled loop there fills somebody's inbox. The key is the
-    # client IP (see App\Security\RequestThrottle): five an hour covers a household or an office
-    # behind one address without making the form a free email relay.
+    # Mail limits stop the forms becoming a relay; higher analytics limits bound public event
+    # ingestion without blocking ordinary browsing. All are keyed by client IP in RequestThrottle.
     rate_limiter:
         registration:
             policy: 'sliding_window'
@@ -21,6 +20,14 @@ framework:
             policy: 'sliding_window'
             limit: 5
             interval: '1 hour'
+        analytics_consent:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '1 hour'
+        analytics_event:
+            policy: 'sliding_window'
+            limit: 120
+            interval: '1 minute'
 
     #esi: true
     #fragments: true

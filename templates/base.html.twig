@@ -90,7 +90,12 @@
             <div class="mx-auto w-full max-w-3xl space-y-2 px-4 py-6 text-xs leading-relaxed text-stone-500">
                 <p>{{ 'scope.banner'|trans }}</p>
                 <p>{{ 'emergency.notice'|trans }}</p>
+                <p>
+                    <button type="button" data-cc="show-preferencesModal" class="font-medium text-stone-600 underline decoration-stone-300 underline-offset-2 hover:text-stone-900">{{ 'consent.manage'|trans }}</button>
+                </p>
             </div>
         </footer>
+
+        {{ include('analytics/_config.html.twig') }}
     </body>
 </html>

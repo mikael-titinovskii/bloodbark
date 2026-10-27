@@ -117,6 +117,97 @@ final class AdminTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    public function testAnalyticsOverviewAndEventBrowserShowStoredEvents(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUser([User::ROLE_SUPER_ADMIN]));
+        $consent = new \App\Entity\AnalyticsConsent(
+            sprintf('00000000-0000-4000-a000-%012s', bin2hex(random_bytes(6))),
+            true,
+            1,
+        );
+        $name = 'admin_'.bin2hex(random_bytes(6));
+        $event = new \App\Entity\AnalyticsEvent($consent, $name, ['locale' => 'ro']);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($consent);
+        $entityManager->persist($event);
+        $entityManager->flush();
+
+        $client->request('GET', '/ro/admin/analytics');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Evenimente după nume');
+        self::assertSelectorTextContains('body', $name);
+
+        $client->request('GET', '/ro/admin/analytics-event');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('table', $name);
+
+        $client->request('GET', '/ru/admin/analytics');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'События по названию');
+    }
+
+    public function testAnalyticsEventsCannotBeChanged(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUser([User::ROLE_SUPER_ADMIN]));
+        $consent = new \App\Entity\AnalyticsConsent(
+            sprintf('00000000-0000-4000-a000-%012s', bin2hex(random_bytes(6))),
+            true,
+            1,
+        );
+        $event = new \App\Entity\AnalyticsEvent($consent, 'read_only_event');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($consent);
+        $entityManager->persist($event);
+        $entityManager->flush();
+
+        $client->request('GET', '/ro/admin/analytics-event/new');
+        self::assertResponseStatusCodeSame(404);
+
+        $client->request('GET', '/ro/admin/analytics-event/'.$event->getId().'/edit');
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testForgettingAVisitorRequiresPostAndCsrfAndDeletesEverything(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->createUser([User::ROLE_SUPER_ADMIN]));
+        $consent = new \App\Entity\AnalyticsConsent(
+            sprintf('00000000-0000-4000-a000-%012s', bin2hex(random_bytes(6))),
+            true,
+            1,
+        );
+        $event = new \App\Entity\AnalyticsEvent($consent, 'forget_me_event');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($consent);
+        $entityManager->persist($event);
+        $entityManager->flush();
+
+        $crawler = $client->request('GET', '/ro/admin/analytics-consent');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('table', $consent->getConsentId());
+        $forgetUrl = $crawler->filter(sprintf('form[action*="/%d/forget"]', $consent->getId()))->attr('action');
+        self::assertNotNull($forgetUrl);
+
+        $path = '/ro/admin/analytics-consent/'.$consent->getId().'/forget';
+        $client->request('GET', $path);
+        self::assertResponseStatusCodeSame(405);
+
+        $client->request('POST', $path.'?token=invalid');
+        self::assertResponseStatusCodeSame(403);
+        self::assertNotNull($entityManager->find(\App\Entity\AnalyticsConsent::class, $consent->getId()));
+
+        $client->request('POST', $forgetUrl);
+        self::assertResponseRedirects('/ro/admin/analytics-consent');
+        $entityManager->clear();
+        self::assertNull($entityManager->find(\App\Entity\AnalyticsConsent::class, $consent->getId()));
+        self::assertNull($entityManager->find(\App\Entity\AnalyticsEvent::class, $event->getId()));
+
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', 'Consimțământul și toate evenimentele asociate au fost șterse.');
+    }
+
     /**
      * @param list<string> $roles
      */

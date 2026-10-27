@@ -1,0 +1,79 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title 'admin.analytics.overview.title'|trans %}
+
+{% block main %}
+    <p class="text-muted">{{ 'admin.analytics.overview.period'|trans({'%date%': period_start|date('Y-m-d')}) }}</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <section class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted">{{ 'admin.analytics.overview.total_events'|trans }}</h2>
+                    <p class="display-6 mb-0">{{ total_events }}</p>
+                </div>
+            </section>
+        </div>
+        <div class="col-md-6">
+            <section class="card h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted">{{ 'admin.analytics.overview.unique_consents'|trans }}</h2>
+                    <p class="display-6 mb-0">{{ unique_consents }}</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <section>
+                <h2 class="h5">{{ 'admin.analytics.overview.by_name'|trans }}</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th scope="col">{{ 'admin.analytics.event.name'|trans }}</th>
+                            <th scope="col">{{ 'admin.analytics.overview.count'|trans }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for name, count in counts_by_name %}
+                            <tr>
+                                <td><code>{{ name }}</code></td>
+                                <td>{{ count }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="2">{{ 'admin.analytics.overview.empty'|trans }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+        <div class="col-lg-6">
+            <section>
+                <h2 class="h5">{{ 'admin.analytics.overview.daily'|trans }}</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th scope="col">{{ 'admin.analytics.overview.date'|trans }}</th>
+                            <th scope="col">{{ 'admin.analytics.overview.count'|trans }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in daily_counts %}
+                            <tr>
+                                <td>{{ row.date }}</td>
+                                <td>{{ row.count }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="2">{{ 'admin.analytics.overview.empty'|trans }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}
