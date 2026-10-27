@@ -6,6 +6,9 @@ Not a broker of biological material.
 Legal anchors, settled decisions, hard prohibitions, the closed listing schema, copy rules, required strings and the
 escalation list live in `legal.md`. Read it before adding a feature, a field, a label or a page.
 
+Directory-specific guidance lives in nested `AGENTS.md` files under `src/`, `assets/`, `templates/`, `tests/`, and
+`.github/`.
+
 ## Symfony
 
 - Framework metadata goes in PHP attributes, never YAML/XML: `#[Route]`, `#[MapRequestPayload]`, `#[MapQueryString]`,
@@ -14,26 +17,13 @@ escalation list live in `legal.md`. Read it before adding a feature, a field, a 
   express it. A YAML service definition is the last resort.
 - Controllers stay thin: bind request data, call a service, return a response. Business rules, query building,
   transactions and persistence belong in services.
-- Use the components instead of hand-rolling: Form, Validator, Serializer, Messenger, Security (voters,
-  authenticators), Twig `path()` / `url()`, and `symfony/lock`'s `LockFactory` for mutual exclusion. Before writing
-  locks, queues, caches, HTTP clients, mailers or schedulers — or adding a third-party library — check whether a Symfony
-  component covers it.
+- Use the components instead of hand-rolling: Form, Validator, Serializer, Messenger, Security (voters, authenticators),
+  Twig `path()` / `url()`, `symfony/lock`'s `LockFactory` for mutual exclusion. Before writing locks, queues, caches,
+  HTTP clients, mailers or schedulers — or adding a library — check whether a Symfony component covers it.
 - Prefer `#[MapRequestPayload]` / `#[MapQueryString]` over `json_decode()` or `SerializerInterface` by hand; install the
   packages rather than falling back to manual parsing.
 - Constructor property promotion, `readonly` for DTOs and value objects. Don't mark a service `readonly` if it might
   become `lazy: true` — a lazy proxy can't extend a `readonly` class.
-- Pages are Twig templates under `templates/` extending `templates/base.html.twig`, which carries the site-wide scope
-  banner — new pages must not re-add it. Error pages live in `templates/bundles/TwigBundle/Exception/`
-  (`error404.html.twig`, `error.html` as the fallback for any other status) so the bundle's renderer picks them up; Twig
-  only uses them with `debug: false`, so `tests/Controller/ErrorPageTest.php` boots a non-debug kernel to test them.
-- The layout owns the chrome: header, the single `<main>` (centred column, `id="main"` for the skip link) and the footer,
-  which holds the emergency notice and the scope statement so every page — error pages and empty states included — shows
-  both without a page template repeating them. A page fills `{% block body %}` with content only — no `<main>`, no outer
-  container — so every page inherits the same width and spacing.
-- Styling is Tailwind utilities written in the Twig, built from `assets/styles/app.css` into `public/assets/app.css` by
-  `make assets`; `make assets-watch` rebuilds as templates change. Forms render through `templates/form/tailwind.html.twig`
-  (`twig.form_themes` in `config/packages/twig.yaml`), which carries the control, label, help and error classes, so a
-  `form_row()` adds no classes of its own and a field's own `attr.class` still wins.
 
 ## Languages
 
@@ -44,12 +34,9 @@ global.
 - Locale lives in the URL, not the session: `config/routes.yaml` imports every controller route once per locale, so
   `app_home` exists as `app_home.ro` at `/` and `app_home.ru` at `/ru`. Never put a locale prefix or parameter in a
   `#[Route]` path. The backoffice is the one exception and does it explicitly — `/{_locale}/admin` — because EasyAdmin's
-  language switcher works by rewriting that route parameter; see the Backoffice section.
-- Generate URLs with the unsuffixed name — `path('app_home')` follows the current locale. Pass `_locale` to address
-  another one, as the switcher in `base.html.twig` does.
-- Every user-facing string goes through `|trans`; the brand name is the only untranslated text in a template. Catalogs
-  are `translations/messages.<locale>.yaml` and may not fall back to English — the required strings in `legal.md` are
-  the English originals, the RO/RU renderings ship. A new language is one `enabled_locales` entry, a
+  language switcher works by rewriting that route parameter; see `src/Controller/Admin/AGENTS.md`.
+- Catalogs are `translations/messages.<locale>.yaml` and may not fall back to English — the required strings in
+  `legal.md` are the English originals, the RO/RU renderings ship. A new language is one `enabled_locales` entry, a
   `messages.<code>.yaml`, and its endonym under `locale.name.<code>` in both catalogs.
 - Constraint messages are a domain of their own: they belong in `translations/validators.<locale>.yaml`, not in the
   messages catalogs. A key that only exists in `messages.<locale>.yaml` renders as the raw key inside a form error, which
@@ -57,92 +44,13 @@ global.
 
 ## Accounts and roles
 
-Registration is the only way an account is born and it mails a generated password plus the link that confirms the
-address. The single exception to "we choose the password" is the reset flow: a one-time link lets the account holder type
-a new one.
+Registration is the only way an account is born. It mails a generated password and confirmation link; the reset flow is
+the only time the account holder chooses a password. Plain registration passwords and confirmation tokens exist only in
+that mail — never log or store them.
 
-- `App\Entity\User` (`app_user`) holds the contact details, the roles, the consent record and the confirmation stamp
-  (`confirmedAt`) with the hash of the live confirmation link. `ContactType` and `ContactWindow` are enums under
-  `src/Entity` implementing `TranslatableInterface`, so the form choices and the account page translate their own labels
-  — `contact.type.*` / `contact.window.*` in both catalogs.
-- `POST /register` binds `App\Form\RegistrationType` onto a fresh `User`, then `App\Service\RegistrationService` generates
-  the password (`App\Security\PasswordGenerator`: 20 characters, no punctuation, no lookalikes), hashes it, records the
-  consent with `app.legal.policy_version` and mails the plaintext and the confirmation link once. The row is flushed only
-  after the mail is away, so a failing transport cannot leave an account whose password nobody received. The plaintext
-  password and the plain token exist only in that message — never log them, never store them.
-- The sender address is `app.mailer.sender`, `no-reply@bloodbark.md` until the real domain is set (`MAILER_SENDER`
-  overrides it). Bump `app.legal.policy_version` whenever the policy text changes: registrations store the version they
-  accepted, and an unchanged number makes that record meaningless.
-- Login is the firewall's `form_login` against `app_login` (`email`/`password` fields, `authenticate` CSRF token); logout
-  is the framework-generated `_logout_main` route, posted with the `logout` token. `App\Security\UserProvider` replaces
-  the entity provider, because a login form hands back whatever casing the visitor typed while addresses are stored
-  lowercased.
-- Every account is a `ROLE_USER`. `ROLE_MODERATOR` and `ROLE_SUPER_ADMIN` live in the same JSON column and are granted
-  from the console: `php bin/console app:user:promote <email> moderator|super_admin`. The hierarchy in `security.yaml`
-  makes them cumulative: super admin ⊃ moderator ⊃ user. The backoffice lists roles but does not edit them — `User`
-  exposes `addRole()` and no setter on purpose, so a form cannot replace the whole column in one POST.
-- The one exception is the address in `SUPERADMIN_EMAIL` (an env var, unset by default: set it in `.env.local` or the
-  deployment environment). When that address registers, it stays a plain user until it follows the confirmation link —
-  then `App\Service\EmailConfirmationService` grants `ROLE_SUPER_ADMIN`. The role hangs off confirmation, not off the
-  registration, because registering only proves that somebody typed the address and the backoffice address must not be
-  taken by whoever types it first.
-- Confirmation itself is `GET /confirm-email/{token}`: the token is stored hashed, spent on first use, and replaced by
-  "send it again" on the account page (`POST /account/confirmation`). A confirmed address is not required to sign in, so
-  an expired link is an inconvenience rather than a lockout.
-- `access_control` matches local paths by regex (`^/(ru/)?account`), since every controller route exists once per
-  locale. New protected areas follow the same shape — the backoffice matches `^/(ro|ru)/admin`, because its locale
-  segment is mandatory rather than optional (see below).
-- `PasswordResetRequest` (`app_password_reset_request`) keeps only the SHA-256 of a link token, one live row per account,
-  valid for `PasswordResetService::TTL_HOURS`. `POST /forgot-password` answers the same sentence for a known and an
-  unknown address (the form must not enumerate accounts), and `GET /reset-password/{token}` only renders the form — the
-  token is spent by the POST that saves the new password, because mail clients and scanners open links on their own. The
-  changed hash also logs that account's other sessions out, since the firewall compares it with the one stored at login.
-- Mail is the expensive part of these flows, so `POST /register`, `POST /forgot-password` and the confirmation resend
-  each spend one hit per submission through `App\Security\RequestThrottle`, keyed by client IP: five an hour each,
-  declared in `framework.rate_limiter`. A refusal is a 429 carrying `Retry-After`, rendered by
-  `templates/bundles/TwigBundle/Exception/error429.html.twig`. Login has its own ceiling in the firewall
-  (`login_throttling`: 5 attempts per 15 minutes per account+IP, reset by a successful sign-in).
-  The counters live in the `cache.rate_limiter` pool, which `cache:clear` does *not* empty — to unstick a dev browser
-  that has spent its five, run `php bin/console cache:pool:clear cache.rate_limiter` (`ee-up` does it for the e2e
-  stack).
-
-### Backoffice
-
-`/{_locale}/admin` is EasyAdmin 5 (`easycorp/easyadmin-bundle`, MIT, PHP 8.2+/Symfony 6.4–8.x). It is an internal tool
-and does not share the public design: EasyAdmin ships Bootstrap 5 and FontAwesome, the rest of the site stays Twig +
-Tailwind.
-
-- `App\Controller\Admin\DashboardController` carries
-  `#[AdminDashboard(routePath: '/{_locale}/admin', routeName: 'app_admin')]`; its `index()` redirects straight to the
-  account list, which is the only thing a super admin comes here to do. `App\Controller\Admin\UserCrudController` is the
-  only CRUD controller so far.
-- The locale is a mandatory path segment here — `/ro/admin/user`, `/ru/admin/user` — unlike the rest of the site, where
-  Romanian is unprefixed. That is the price of a working language switcher: EasyAdmin rewrites the `_locale` route
-  parameter, so the route has to carry one. `configureDashboard()` feeds the switcher from
-  `%kernel.enabled_locales%`; the route's `requirements` mirror that list in a constant, because attribute arguments
-  cannot read parameters.
-- Bare `/admin` still works: `App\EventListener\AdminLandingRedirect` answers it before routing with a 302 to the
-  default locale. `access_control` matches `^/(ro|ru)/admin`.
-- Routes come from EasyAdmin's own loader (`config/routes/easyadmin.yaml`, `type: easyadmin.routes`), not from
-  `config/routes.yaml`. The attribute creates the dashboard route; `app_admin_user_index`, `app_admin_user_edit`, … are
-  generated from its path, locale placeholder included.
-- `new` is disabled in `configureActions()` *and* refused in the controller: `Action::NEW` off only hides the button,
-  EasyAdmin serves the route regardless, and an account that appears without a password nobody received is worse than
-  no account. Everything else about an account comes from registration and confirmation.
-- Properties with no setter (`roles`, `consentAt`, `confirmedAt`, `createdAt`) are hidden from the form, and the email is
-  a disabled input — it is the login identifier and the confirmation record hangs off it.
-- Field and menu labels are message keys (`Field::new('email', t('account.email'))`); EasyAdmin translates them in the
-  `messages` domain, which is why `admin.*` lives in both catalogs. A label with no key renders as the raw key.
-- `assets:install` (in composer's auto-scripts) publishes the bundle to `public/bundles/easyadmin`, which is git-ignored:
-  a checkout that never ran `composer install` serves an unstyled backoffice.
-- `tests/Controller/AdminTest.php` covers the three refusals (anonymous, plain user, moderator) and the account list for
-  a super admin.
-- `src/DataFixtures/SuperAdminFixtures.php` seeds `superadmin@bloodbark.test` with the password in its `PASSWORD`
-  constant — a confirmed super admin, so `/admin` is reachable without registering, digging the generated password out
-  of Mailpit and promoting yourself. Load it with `doctrine:fixtures:load --append`: without `--append` the command
-  purges the dev database first. The fixture is a no-op when the row already exists. It never reaches production, since
-  `DoctrineFixturesBundle` is registered for `dev` and `test` only; the e2e database gets the same account, which is what
-  an admin acceptance test would sign in with.
+Roles are cumulative and granted from the console. `SUPERADMIN_EMAIL` receives `ROLE_SUPER_ADMIN` only after confirming
+the address, never at registration. Protected paths must handle both locales. Implementation details live in
+`src/AGENTS.md`; backoffice rules live in `src/Controller/Admin/AGENTS.md`.
 
 ## Local stack (Docker)
 
@@ -152,16 +60,15 @@ cert — accept the warning), `make down` stops it. Inside the compose network t
 - `make shell CMD="php bin/console …"` runs one command there; bare `make shell` opens a shell (Alpine, so `sh`). `bin/*`
   is not executable on the bind mount — always prefix with `php`.
 - e2e is these same files as a second compose project, `bloodbark-e2e`: `compose.e2e.yaml` sets `APP_ENV=test` (PHP-FPM
-  runs `clear_env = no`, so the container env reaches the app) and stops nginx from publishing 8000. It has its own
-  network and its own `database_data` volume, and `make down` doesn't touch it. `make ee-up` / `make ee` / `make ee-down`
-  start, use and stop it. Raw form: `docker compose -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml …`.
-- The image carries headless Chromium and chromedriver for the acceptance suite, plus `ext-zip` (Codeception's WebDriver
-  client needs it). Chromium refuses to start without a writable `HOME`, hence `HOME=/tmp` on the `php` service — the
-  only reason the variable is there.
-- `database` is PostgreSQL 18 with its data in `database_data`, mounted at `/var/lib/postgresql` (the image keeps
-  `PGDATA` under `/var/lib/postgresql/18/docker`); `php` waits on its healthcheck. Published to the host only by
-  `compose.override.yaml` — change the port there, not in `compose.yaml`. From the host:
-  `docker compose exec database psql -U bloodbark bloodbark`.
+  runs `clear_env = no`, so the container env reaches the app) and nginx does not publish 8000. Own network, own
+  `database_data` volume, untouched by `make down`. `make ee-up` / `ee` / `ee-down` start, use and stop it. Raw form:
+  `docker compose -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml …`.
+- The image carries headless Chromium + chromedriver for the acceptance suite and `ext-zip` (Codeception's WebDriver
+  client needs it). Chromium won't start without a writable `HOME` — the only reason `HOME=/tmp` is set on the `php`
+  service.
+- `database` is PostgreSQL 18, data in `database_data` mounted at `/var/lib/postgresql` (the image keeps `PGDATA` under
+  `/var/lib/postgresql/18/docker`); `php` waits on its healthcheck. Published to the host only by `compose.override.yaml`
+  — change the port there, not in `compose.yaml`. From the host: `docker compose exec database psql -U bloodbark bloodbark`.
 - `DATABASE_URL` in `.env` is dev-only (`database:5432`, user, password and database all `bloodbark`), hence committed.
   `make db-create` adds `bloodbark_test` (Doctrine's `dbname_suffix` under `when@test`) for PHPUnit; the e2e suites have
   their own database inside the e2e stack. Server version pinned to 18 in `config/packages/doctrine.yaml`.
@@ -169,47 +76,11 @@ cert — accept the warning), `make down` stops it. Inside the compose network t
   root mounted at `/home/docker/src`.
 - Certs are dev-only and git-ignored. Regenerate with
   `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout docker/nginx/certs/selfsigned.key -out docker/nginx/certs/selfsigned.crt -subj "/CN=localhost"`.
-- `node` is only for JS work. It carries the `tools` profile, so `make up` and `make ee-up` leave it alone;
-  `docker compose run --rm node …` enables the profile implicitly.
-- `mailer` is Mailpit, declared in `compose.override.yaml` so only the dev stack runs it: the inbox is
-  http://localhost:8025 and SMTP is `mailer:1025` on the compose network, which is what `.env.dev` puts in `MAILER_DSN`.
-  `.env` keeps `MAILER_DSN` on the null transport and `config/packages/mailer.yaml` pins it again under `when@test`, so
-  neither `make unit` nor `make ee` sends anything. A real sender — Mailtrap's sandbox, say
-  `smtp://USERNAME:PASSWORD@sandbox.smtp.mailtrap.io:2525` — goes in `.env.dev.local`, which is git-ignored and loads
-  after `.env.dev`. One test message: `make shell CMD="php bin/console mailer:test you@example.com"`.
-
-## Front-end build
-
-Plain Vite — no Symfony bundle, no Asset component, no manifest. Sources in `assets/`, build output at fixed filenames
-in `public/assets/`, templates link by name.
-
-- `make assets` builds, `make assets-watch` rebuilds on change, `make npm CMD="…"` runs any npm command. All three shell
-  into the `node` service — npm never runs on the host (the checkout is on a Windows-accessible path, where npm can't
-  run lifecycle scripts). `node_modules` is ignored; the cache goes to `var/npm-cache`.
-- Entries are declared by hand in `vite.config.mjs`, keyed by output path: `app` → `/assets/app.js`, `'pages/home'` →
-  `/assets/pages/home.js`. To add one, drop a file under `assets/`, add it to `input`, reference it from a template.
-  `templates/home/index.html.twig` is the pattern — it calls `{{ parent() }}` first so the shared `app.js` stays.
-- Tailwind CSS v4 is wired in through `@tailwindcss/vite` (a plugin in `vite.config.mjs`), not a PostCSS config. The
-  stylesheet is `assets/styles/app.css`, imported by the shared `assets/app.js` entry and built to `/assets/app.css`,
-  which `templates/base.html.twig` links from its `stylesheets` block — Vite emits CSS as a separate asset, it is not
-  injected by the module at runtime, so a new entry that imports CSS needs its own `<link>`.
-- That stylesheet uses `@import 'tailwindcss' source(none)` and declares exactly what is scanned: `templates/`, `src/`,
-  `assets/**/*.js`. Automatic detection is off on purpose (the build runs against a bind mount in a container, so the
-  project root it would infer is not worth relying on). A class that lives somewhere else — a new top-level directory,
-  a package's Twig templates — needs an `@source` line or Tailwind will not emit it. Utilities are compiled only for
-  classes that appear literally in those files; there is no safelist.
-- `make assets-watch` is the Twig loop: the plugin registers every file it scanned as a watch file, so editing a
-  template, PHP file or JS module rebuilds `app.css` in well under a second (verified through the bind mount — no
-  polling config needed). Two limits: a *new* file never triggers a build, since nothing registers it, and candidates
-  only accumulate within one watcher session, so a removed class lingers until it restarts. After adding a template,
-  creating a directory under `@source`, or deleting one, restart the watcher — or just run `make assets`, which scans
-  from scratch.
-- Filenames carry no content hash on purpose, so templates can name them and no manifest lookup is needed. Nothing sets
-  long cache headers for `/assets/`, so browsers revalidate rather than serve a stale bundle — keep it that way unless
-  hashing is introduced. `public/assets/` is build output only; Vite empties it on each build.
-- `npm run lint` (part of `make lint`) runs ESLint over `assets/` and the config files via `eslint.config.js`: ESLint
-  `recommended` plus browser globals, Node globals for the configs; `vendor/`, `node_modules/`, `public/`, `var/` are
-  ignored. Fix with `make npm CMD="run lint -- --fix"`.
+- `mailer` is Mailpit, declared in `compose.override.yaml` so only the dev stack runs it: inbox http://localhost:8025,
+  SMTP `mailer:1025` on the compose network (what `.env.dev` puts in `MAILER_DSN`). `.env` keeps the null transport and
+  `config/packages/mailer.yaml` pins it again under `when@test`, so neither `make unit` nor `make ee` sends anything. A
+  real sender (e.g. Mailtrap's sandbox) goes in `.env.dev.local`, git-ignored, which loads after `.env.dev`. One test
+  message: `make shell CMD="php bin/console mailer:test you@example.com"`.
 
 ## Everyday workflow
 
@@ -231,105 +102,28 @@ in `public/assets/`, templates link by name.
   absolute path. No relative-path navigation into a delete.
 - **No git hooks.** Formatting, linting, tests and any deploy step are commands someone runs on purpose (`make lint`,
   `make unit`), never a hook hiding in `.git/`. Do not add one.
-- History has a second copy at `/home/mimit/backups/bloodbark.git`; nothing keeps it current. Refresh it from WSL
-  (Windows Git rewrites the path):
-  `wsl -d Ubuntu -e bash -lc 'git --git-dir=/home/mimit/backups/bloodbark.git remote update --prune'`. Do not delete,
-  rewrite or "clean up" that mirror.
-- Git runs on both sides of the `\\wsl.localhost` share: `core.filemode=false` and `.gitattributes` pinning `eol=lf` are
-  deliberate (Windows can't set exec bits; global `core.autocrlf=true` would otherwise write CRLF into `bin/*`,
-  `Dockerfile`, `*.sh`). The signing key is Windows-only, so commits from WSL need
-  `git -c commit.gpgsign=false commit …`.
 
 ## Testing
 
-`symfony/test-pack`: PHPUnit 13, `phpunit.dist.xml`, `tests/bootstrap.php`, the `test` environment. HTTP tests extend
-`WebTestCase`, service tests `KernelTestCase`; run `make unit`. A feature isn't done until a test exercises it the way a
-caller would — an HTTP request for a controller, a service call for a service, not just "it didn't throw". Tests use
-PostgreSQL too (`bloodbark_test`, via Doctrine's `dbname_suffix`): run `make db-create` once and apply migrations with
-`php bin/console doctrine:migrations:migrate --env=test`.
-
-Rate-limiter counters live in `cache.rate_limiter`, which outlives a single test, so a functional test that submits a
-throttled form clears it through `App\Tests\Support\ClearsRateLimits`; otherwise the suite throttles itself instead of
-the app. That pool's namespace is derived from the container class, which is why `TooManyRequestsPageTest` (debug off)
-clears it through a non-debug kernel.
-
-### End-to-end: Codeception suites
-
-`make ee` is the gate. Codeception (root `codeception.yml`, suites in `tests/<Suite>.suite.yml`) runs two suites against
-the e2e stack, over nginx → PHP-FPM → its own database:
-
-- `Smoke` (`tests/Smoke`, `PhpBrowser`): plain HTTP, no browser — "is it up, does it answer 200" belongs here.
-  `tests/Smoke/HomepageCest.php` is the homepage check.
-- `Acceptance` (`tests/Acceptance`, `WebDriver`): headless Chromium in the e2e `php` container, for real interaction.
-  Codeception's `RunProcess` extension starts and stops chromedriver around the suite.
-
-`PhpBrowser` and `WebDriver` can't share a suite (the WebDriver module conflicts with any other `Web` module), which is
-why there are two. Both are HTTP end-to-end; neither uses an in-process kernel.
-
-Database lifecycle is why `ee` is a single command:
-
-- `ee-up` starts the stack and rebuilds the database every invocation: `database:drop --force --if-exists`, `create`,
-  `migrations:migrate --allow-no-migration` (so an empty `migrations/` doesn't fail the run), then
-  `fixtures:load --append` (nothing to purge on a fresh schema, and purge-with-truncate would trip over foreign keys).
-  With `_test` appended it acts on `bloodbark_test` inside the e2e server. `make ee` is `ee-up` plus `codecept run`;
-  `make ee-down` stops it.
-- e2e data comes from `src/DataFixtures` (`AppFixtures`), picked up because `DoctrineFixturesBundle` is registered for
-  `dev` and `test`. Add entities there, not to the tests, so a suite can write freely and every run starts the same.
-- `ee-up` also runs `cache:clear` for `test`: `var/cache/test` is shared with `make unit`, and a container compiled
-  before an edit would otherwise survive into the run.
-- `E2E_BASE_URL` (from `compose.yaml`, `https://nginx`) can be overridden in the environment. One suite directly:
-  `docker compose -p bloodbark-e2e -f compose.yaml -f compose.e2e.yaml exec -T php php vendor/bin/codecept run Smoke`
-  — add `--debug` for step-by-step requests, headers and status codes.
-- Actor classes (`tests/Support/*Tester.php`, `_generated/`) come from `codecept build`; `codecept run` regenerates them.
-  Both are git-ignored and excluded from php-cs-fixer and PHPStan — do not hand-format them. Failures leave a screenshot
-  (browser suite only) and the response HTML in `var/codeception/`.
-- Keep PHPUnit for controller/service work: Codeception is the outermost gate, not a replacement.
+Run `make unit`; `make ee` is the end-to-end gate. A feature isn't done until a test exercises it the way a caller would.
+Detailed setup and suite rules live in `tests/AGENTS.md`.
 
 ## Checks: style and static analysis
 
-`make lint` runs all of it; the composer scripts are there when only one is needed.
+`make lint` runs php-cs-fixer, PHPStan, ESLint, and container/YAML/Twig lint. Use `composer cs:check` / `composer cs:fix`,
+`composer phpstan`, or `composer check` for the PHP checks individually. A change isn't done while any check is red.
 
-- `composer cs:check` (dry run with a diff) / `composer cs:fix` — php-cs-fixer, `@Symfony` ruleset in
-  `.php-cs-fixer.dist.php`, `*.php` only, so `bin/console` is not checked.
-- `composer phpstan` — level 8 over `src/` and `tests/`, configured in `phpstan.dist.neon`, with
-  `phpstan/phpstan-strict-rules`, `phpstan/phpstan-doctrine` (so a property the ORM fills in counts as written, and a
-  nullable property over a NOT NULL column is an error) and `checkUninitializedProperties`. The Symfony extension resolves services from
-  `var/cache/dev/App_KernelDevDebugContainer.xml`, so warm the dev cache if that file is missing. Widen `paths` as
-  directories appear; exclude generated code (today only `tests/Support/_generated`). Don't lower the level or add
-  inline ignores — use `--generate-baseline` if an upgrade ever needs it.
-- `composer check` — both, style first. `make lint` then also runs `npm run lint`, `lint:container`,
-  `lint:yaml config/ translations/` and `lint:twig templates/`. It runs `codecept build` before phpstan for a reason: the
-  Cest files call methods that exist only on the actor traits written into `tests/Support/_generated`, so on a checkout
-  that never ran `make ee` phpstan reports all of them as undefined. That output stays git-ignored and excluded from both
-  phpstan and php-cs-fixer; regenerating it is harmless.
+- php-cs-fixer uses `@Symfony` and checks `*.php` only, not `bin/console`. PHPStan is level 8 with strict and Doctrine
+  rules plus `checkUninitializedProperties` over `src/` and `tests/`. Warm the dev cache if its container dump is missing;
+  widen `paths` as directories appear and exclude generated code. Don't lower the level or add inline ignores — use
+  `--generate-baseline` if an upgrade needs it.
+- `make lint` and `make unit` set `XDEBUG_MODE=off`; use the same setting for raw PHP commands.
 
-A change isn't done while any of them is red. `make lint` and `make unit` set `XDEBUG_MODE=off` (otherwise every PHP
-process spends a second reaching for a debugger on port 9002); the raw form is
-`docker compose exec -T -e XDEBUG_MODE=off php composer check`.
+## CI
 
-## CI: the `lint` and `unit` jobs
-
-`.github/workflows/ci.yml` runs those two targets on `ubuntu-latest` for every pull request against `main` — nothing
-else, no e2e and no deploy. It calls the real recipes instead of a copy of them: `make lint PHP= NODE=` and
-`make unit PHP=` blank the two prefixes the Makefile otherwise points at the compose services, leaving the bare
-`composer`/`php`/`npm` calls that `setup-php` and `setup-node` put on PATH. Edit a command list in the Makefile and CI
-follows; there is nothing to keep in sync.
-
-- The `lint` job runs without a database. PHPStan analyses DQL without connecting — checked against an unreachable
-  `DATABASE_URL` — but it needs `php bin/console cache:warmup` first, because `phpstan.dist.neon` reads the dev container
-  dump.
-- The `unit` job runs a `postgres:18-alpine` service, then creates and migrates `bloodbark_test` (`dbname_suffix` under
-  `when@test`) before `php bin/phpunit`. `DATABASE_URL` points at `127.0.0.1`, since `.env`'s `database` host only
-  resolves inside compose. Tests seed their own rows, so there is no `doctrine:fixtures:load` step.
-- Both jobs pin PHP 8.5 with the extensions `docker/php/Dockerfile` installs, minus the xdebug, redis and codeception
-  parts; `XDEBUG_MODE=off` is set at job level to match what the Makefile passes locally.
-- The job names `lint` and `unit` are the required status checks on `main`. Renaming one silently drops it from the
-  ruleset, so rename it in both places.
+The required `lint` and `unit` status checks run on pull requests to `main`. Details live in `.github/AGENTS.md`.
 
 ## Discover, don't guess
 
-APIs change and training data goes stale — look things up in the project instead of relying on memory:
-`bin/console about`; `debug:router`, `debug:container`, `debug:autowiring <name>`, `debug:config <bundle>`,
-`config:dump-reference <bundle>`; `lint:container`, `lint:yaml config/`, `lint:twig templates/` to validate before
-running; the installed source and docblocks under `vendor/`; docs at https://symfony.com/doc/current/ (switch to the
-version matching `composer.json` if it differs).
+Inspect the project and installed `vendor/` source rather than guessing: `bin/console about`, `debug:router`,
+`debug:container`, `debug:config`, and `config:dump-reference`. Use the Symfony docs matching `composer.json`.
