@@ -12,3 +12,11 @@
 @source '../../templates';
 @source '../../src';
 @source '../**/*.js';
+
+:root {
+    --cc-btn-primary-bg: #be123c;
+    --cc-btn-primary-border-color: #be123c;
+    --cc-btn-primary-hover-bg: #9f1239;
+    --cc-btn-primary-hover-border-color: #9f1239;
+    --cc-toggle-on-bg: #be123c;
+}

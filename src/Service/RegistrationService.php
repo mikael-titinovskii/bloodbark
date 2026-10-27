@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Mailer\RegistrationMailer;
 use App\Repository\UserRepository;
 use App\Security\PasswordGenerator;
+use App\Service\Analytics\AnalyticsRecorder;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -24,6 +25,7 @@ final readonly class RegistrationService
         private PasswordGenerator $generator,
         private RegistrationMailer $mailer,
         private EmailConfirmationService $confirmations,
+        private AnalyticsRecorder $analytics,
         #[Autowire('%app.legal.policy_version%')] private string $policyVersion,
     ) {
     }
@@ -46,5 +48,6 @@ final readonly class RegistrationService
         $this->users->save($user, flush: false);
         $this->mailer->send($user, $password, $confirmationToken, $locale);
         $this->users->save($user);
+        $this->analytics->record('registration_completed', ['locale' => $locale]);
     }
 }

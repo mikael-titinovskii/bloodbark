@@ -30,10 +30,10 @@ final class RegistrationCest
     public function refusesAnAddressThatAlreadyHasAnAccount(AcceptanceTester $I): void
     {
         $this->signUp($I, 'e2e.duplicate@example.com');
-        $I->see('Verifică-ți e-mailul');
+        $I->waitForText('Verifică-ți e-mailul', 10);
 
         $this->signUp($I, 'e2e.duplicate@example.com');
-        $I->see('Există deja un cont cu această adresă');
+        $I->waitForText('Există deja un cont cu această adresă', 10);
     }
 
     private function signUp(AcceptanceTester $I, string $email): void
